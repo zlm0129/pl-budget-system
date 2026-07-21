@@ -1,0 +1,1417 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>项目预算损益表 PL 系统</title>
+<style>
+  :root {
+    --bg:#0f1117; --bg2:#1a1d27; --bg3:#232733; --bg4:#2c3040;
+    --text:#e8eaed; --text2:#9aa0ab;
+    --accent:#6c8cff; --accent2:#4a6aef;
+    --green:#34d399; --red:#f87171; --orange:#fbbf24; --purple:#a78bfa;
+    --border:#2e3348; --input-bg:#1e2235; --radius:10px;
+  }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','PingFang SC','Microsoft YaHei',sans-serif;
+    background:var(--bg); color:var(--text); line-height:1.6; min-height:100vh; }
+  .header { background:linear-gradient(135deg,var(--bg2),var(--bg3)); border-bottom:1px solid var(--border);
+    padding:16px 32px; display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:12px; }
+  .header h1 { font-size:20px; font-weight:700; background:linear-gradient(135deg,var(--accent),var(--purple));
+    -webkit-background-clip:text; -webkit-text-fill-color:transparent; }
+  .header-controls { display:flex; align-items:center; gap:12px; flex-wrap:wrap; }
+  .ctrl-group { display:flex; align-items:center; gap:6px; }
+  .ctrl-group label { font-size:12px; color:var(--text2); white-space:nowrap; }
+  .ctrl-group select { background:var(--input-bg); color:var(--text); border:1px solid var(--border);
+    border-radius:6px; padding:5px 10px; font-size:13px; cursor:pointer; outline:none; }
+  .ctrl-group select:focus { border-color:var(--accent); }
+  .btn-xs { padding:5px 12px; border-radius:6px; font-size:12px; font-weight:600; border:1px solid var(--border);
+    cursor:pointer; background:var(--bg3); color:var(--text); transition:all .2s; font-family:inherit; }
+  .btn-xs:hover { background:var(--bg4); border-color:var(--accent); }
+  .btn-xs-primary { background:var(--accent); color:#fff; border-color:var(--accent); }
+  .btn-xs-primary:hover { background:var(--accent2); }
+  .btn-xs-primary.is-disabled, .btn-xs-primary:disabled { background:var(--bg4); color:var(--text2); border-color:var(--border); cursor:not-allowed; opacity:.65; }
+  .btn-xs-primary.is-disabled:hover, .btn-xs-primary:disabled:hover { background:var(--bg4); }
+  .hint-count { font-size:12px; color:var(--accent); font-weight:600; margin-right:auto; }
+  .main { max-width:1440px; margin:0 auto; padding:20px 32px; display:grid; grid-template-columns:1fr 1fr; gap:18px; }
+  .section { background:var(--bg2); border:1px solid var(--border); border-radius:var(--radius); overflow:hidden; }
+  .section-full { grid-column:1 / -1; }
+  .section-header { background:var(--bg3); padding:10px 18px; font-size:13px; font-weight:600;
+    border-bottom:1px solid var(--border); display:flex; align-items:center; gap:8px; }
+  .section-header .dot { width:8px; height:8px; border-radius:50%; background:var(--accent); }
+  .section-body { padding:14px 18px; }
+  .form-grid { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+  .form-grid.cols-3 { grid-template-columns:1fr 1fr 1fr; }
+  .form-grid.cols-4 { grid-template-columns:repeat(4,1fr); }
+  .fg { display:flex; flex-direction:column; gap:3px; }
+  .fg label { font-size:11px; color:var(--text2); font-weight:500; }
+  .fg input, .fg select { background:var(--input-bg); color:var(--text); border:1px solid var(--border);
+    border-radius:6px; padding:7px 11px; font-size:14px; outline:none; transition:all .2s; }
+  .fg input:focus, .fg select:focus { border-color:var(--accent); box-shadow:0 0 0 3px rgba(108,140,255,.15); }
+  .fg input::placeholder { color:var(--text2); opacity:.4; }
+  .fg input.input-blue { border-left:3px solid var(--accent); }
+  .fg input[readonly] { opacity:.7; cursor:default; }
+  .fg input.manual-edited { border-left:3px solid var(--orange) !important; }
+  .tag { display:inline-block; padding:1px 7px; border-radius:4px; font-size:10px; font-weight:600; }
+  .tag-blue { background:rgba(108,140,255,.15); color:var(--accent); }
+  .tax-tag { display:inline-block; font-size:11px; color:var(--accent); background:rgba(59,130,246,.1); border:1px solid rgba(59,130,246,.25); padding:0 5px; border-radius:3px; margin-left:4px; vertical-align:middle; }
+  .staff-table-wrap { margin-top:4px; }
+  .staff-toolbar { display:flex; align-items:center; gap:8px; margin-bottom:10px; flex-wrap:wrap; }
+  .staff-table { width:100%; border-collapse:collapse; font-size:13px; }
+  .staff-table th { background:var(--bg3); padding:8px 10px; text-align:left; font-size:11px;
+    color:var(--text2); font-weight:600; border-bottom:1px solid var(--border); }
+  .staff-table td { padding:6px 8px; border-bottom:1px solid rgba(46,51,72,.6); vertical-align:middle; }
+  .staff-table tr:hover td { background:rgba(108,140,255,.03); }
+  .staff-table select, .staff-table input { background:var(--input-bg); color:var(--text); border:1px solid var(--border);
+    border-radius:5px; padding:5px 8px; font-size:13px; outline:none; width:100%; }
+  .staff-table select:focus, .staff-table input:focus { border-color:var(--accent); }
+  .staff-table .row-sub { font-weight:600; color:var(--orange); min-width:90px; text-align:right; }
+  .staff-table .row-mm  { font-weight:600; color:var(--accent);   min-width:60px; text-align:center; }
+  .limit-hint { font-size:12px; color:var(--text2); margin-top:3px; line-height:1.4; }
+  .limit-hint .lim-val { color:var(--green); font-weight:600; }
+  .limit-hint.lim-over { color:var(--red); }
+  .limit-hint.lim-over .lim-val { color:var(--red); }
+  input.input-over { border-color:var(--red) !important; box-shadow:0 0 0 2px rgba(239,68,68,.2) !important; background:rgba(239,68,68,.04); }
+  .over-msg { font-size:11px; color:var(--red); margin-top:2px; white-space:nowrap; }
+  .btn-del-row { background:none; border:1px solid var(--red); color:var(--red); padding:2px 8px;
+    border-radius:4px; font-size:11px; cursor:pointer; transition:all .2s; font-family:inherit; }
+  .btn-del-row:hover { background:rgba(248,113,113,.15); }
+  .frow { display:flex; align-items:center; justify-content:space-between; padding:7px 14px; border-radius:6px;
+    font-size:13px; background:var(--input-bg); margin-bottom:5px; }
+  .frow .fl { color:var(--text2); }
+  .frow .fv { font-weight:600; font-size:14px; min-width:100px; text-align:right; }
+  .frow.hl { background:rgba(108,140,255,.08); border:1px solid rgba(108,140,255,.2); }
+  .frow.green { background:rgba(52,211,153,.08); border:1px solid rgba(52,211,153,.2); }
+  .frow.red { background:rgba(248,113,113,.08); border:1px solid rgba(248,113,113,.2); }
+  .frow.orange { background:rgba(251,191,36,.08); border:1px solid rgba(251,191,36,.2); }
+  .results { display:grid; grid-template-columns:repeat(4,1fr); gap:10px; }
+  .rcard { background:var(--bg3); border:1px solid var(--border); border-radius:8px; padding:12px 14px; transition:all .25s; }
+  .rcard:hover { border-color:var(--accent); transform:translateY(-1px); }
+  .rcard .rl { font-size:10px; color:var(--text2); margin-bottom:3px; text-transform:uppercase; letter-spacing:.5px; }
+  .rcard .rv { font-size:20px; font-weight:700; }
+  .rcard .rs { font-size:10px; color:var(--text2); margin-top:2px; }
+  .rcard.positive .rv { color:var(--green); }
+  .rcard.negative .rv { color:var(--red); }
+  .rcard.neutral .rv { color:var(--accent); }
+  .std-grid { display:grid; grid-template-columns:repeat(4,1fr); gap:8px; margin-top:8px; }
+  .section:not(.section-full) .std-grid { grid-template-columns:1fr 1fr; }
+
+  /* ★ 固定费用成本两段式布局 */
+  .fixed-cost-split { display:grid; grid-template-columns:1fr 1fr; gap:16px; }
+  .fixed-cost-group { background:rgba(108,140,255,.04); border:1px solid rgba(108,140,255,.15); border-radius:8px; padding:12px; }
+  .fixed-cost-group-title { font-size:12px; font-weight:700; color:var(--accent); margin-bottom:8px; padding-bottom:6px; border-bottom:1px dashed rgba(108,140,255,.2); }
+
+  /* ★ 项目损益总表样式 */
+  .pl-summary-table { width:100%; max-width:none; border-collapse:collapse; margin:0 0 12px; font-size:13px; table-layout:fixed; }
+  .pl-summary-table col.c-label { width:50%; }
+  .pl-summary-table col.c-val { width:25%; }
+  .pl-summary-table col.c-note { width:25%; }
+  .pl-summary-table td { padding:6px 12px; border:1px solid var(--border); word-break:break-word; overflow-wrap:anywhere; vertical-align:top; }
+  .pl-summary-table .pl-st-val, .pl-summary-table .pl-st-pct { text-align:right; }
+  .pl-summary-table .pl-st-indent { text-align:left; }
+  .pl-summary-table .pl-st-group { background:var(--bg4); font-weight:600; font-size:14px; text-align:left; padding:8px 12px; }
+  .pl-summary-table .pl-st-subhead { background:rgba(108,140,255,.06); font-size:12px; color:var(--text2); }
+  .pl-summary-table .pl-st-indent { padding-left:24px; color:var(--text); }
+  .pl-summary-table .pl-st-val-pos { color:var(--green); font-weight:600; }
+  .pl-summary-table .pl-st-val-neg { color:var(--red); font-weight:600; }
+  .pl-summary-table .pl-st-pct { font-weight:600; }
+  .pl-summary-table .pl-st-highlight td { background:rgba(108,140,255,.12); font-size:15px; font-weight:700; color:var(--accent); padding:10px 12px; }
+  .pl-note-box { background:var(--bg4); border:1px solid var(--border); border-radius:8px; padding:12px 16px; font-size:12px; color:var(--text2); line-height:1.8; }
+  .pl-note-box strong { color:var(--text); }
+  .std-card { background:var(--bg3); border:1px solid var(--border); border-radius:8px; padding:10px 12px; width:100%; box-sizing:border-box; }
+  .std-card .sn { font-size:11px; color:var(--text2); margin-bottom:4px; }
+  .std-card .sr { font-size:18px; font-weight:700; color:var(--green); }
+  .budget-rec-box { background:linear-gradient(135deg,rgba(108,140,255,.06),rgba(167,139,250,.06));
+    border:1px solid rgba(108,140,255,.25); border-radius:10px; padding:16px 20px; }
+  .budget-rec-title { font-size:14px; font-weight:700; color:var(--accent); margin-bottom:12px; }
+  .budget-hint { margin-top:10px; padding-top:10px; border-top:1px dashed var(--border); font-size:12px; color:var(--text2); line-height:1.8; }
+  .apply-btn { margin-top:10px; padding:8px 20px; border-radius:6px; font-size:13px; font-weight:600;
+    background:var(--accent); color:#fff; border:none; cursor:pointer; transition:all .2s; font-family:inherit; }
+  .apply-btn:hover { background:var(--accent2); transform:scale(1.02); }
+  .sb { display:inline-flex; align-items:center; gap:3px; padding:2px 7px; border-radius:10px; font-size:10px; font-weight:600; }
+  .sb-pass { background:rgba(52,211,153,.15); color:var(--green); }
+  .sb-fail { background:rgba(248,113,113,.15); color:var(--red); }
+  .action-bar { display:flex; gap:8px; margin-top:16px; grid-column:1 / -1; justify-content:center; flex-wrap:wrap; }
+  .btn { padding:9px 20px; border-radius:8px; font-size:13px; font-weight:600; border:1px solid var(--border);
+    cursor:pointer; transition:all .2s; display:inline-flex; align-items:center; gap:5px; font-family:inherit; }
+  .btn-primary { background:var(--accent); color:#fff; border-color:var(--accent); }
+  .btn-primary:hover { background:var(--accent2); transform:translateY(-1px); }
+  .btn-secondary { background:var(--bg3); color:var(--text); }
+  .btn-secondary:hover { background:var(--bg4); }
+  .divider { height:1px; background:var(--border); margin:10px 0; }
+  .collapsible { cursor:pointer; user-select:none; }
+  .collapsible::after { content:'\25BC'; margin-left:6px; transition:transform .2s; display:inline-block; font-size:10px; }
+  .collapsible.collapsed::after { transform:rotate(-90deg); }
+  .cc-content { overflow:hidden; transition:max-height .3s ease; max-height:3000px; }
+  .cc-content.collapsed { max-height:0; }
+  .modal-overlay { display:none; position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(0,0,0,.7);
+    z-index:1000; align-items:center; justify-content:center; }
+  .modal-overlay.show { display:flex; }
+  .modal { background:var(--bg2); border:1px solid var(--border); border-radius:var(--radius); padding:22px;
+    max-width:720px; width:92%; max-height:80vh; overflow-y:auto; }
+  .modal h3 { margin-bottom:14px; color:var(--accent); font-size:16px; }
+  .modal pre { background:var(--bg); border:1px solid var(--border); border-radius:6px; padding:14px; font-size:11px;
+    overflow-x:auto; max-height:380px; white-space:pre-wrap; word-break:break-all; color:var(--text2); }
+  .modal .ma { display:flex; gap:8px; margin-top:14px; }
+  .modal .ma .btn { flex:1; justify-content:center; }
+  .tip-box { background:rgba(108,140,255,.07); border:1px solid rgba(108,140,255,.2); border-radius:8px;
+    padding:14px; margin-top:10px; font-size:12px; line-height:1.8; }
+  .tip-box code { background:var(--bg); padding:2px 6px; border-radius:4px; font-size:11px; color:var(--accent); }
+
+  /* ===== 子项 line item 样式 ===== */
+  .items-toolbar { display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap; margin-bottom:12px; }
+  .items-toolbar .hint { font-size:12px; color:var(--text2); }
+  .item-card { border:1px solid var(--border); border-radius:12px; margin-bottom:14px; overflow:hidden;
+    background:var(--bg3); transition:border-color .25s; }
+  .item-card:hover { border-color:rgba(108,140,255,.4); }
+  .item-head { display:flex; align-items:center; gap:10px; padding:12px 16px; background:rgba(108,140,255,.05);
+    border-bottom:1px solid var(--border); flex-wrap:wrap; }
+  .item-name { flex:1; min-width:200px; background:var(--input-bg); color:var(--text); border:1px solid var(--border);
+    border-radius:6px; padding:7px 11px; font-size:14px; outline:none; }
+  .item-name:focus { border-color:var(--accent); }
+  .item-type { background:var(--input-bg); color:var(--text); border:1px solid var(--border); border-radius:6px;
+    padding:7px 10px; font-size:13px; outline:none; cursor:pointer; min-width:160px; }
+  .item-type:focus { border-color:var(--accent); }
+  .item-meta { font-size:12px; font-weight:600; color:var(--green); white-space:nowrap;
+    background:rgba(52,211,153,.1); border:1px solid rgba(52,211,153,.25); padding:3px 9px; border-radius:10px; }
+  .item-body { padding:14px 16px; }
+  .item-result { display:flex; align-items:center; gap:16px; flex-wrap:wrap; margin-top:12px; padding:10px 14px;
+    background:rgba(108,140,255,.05); border:1px solid rgba(108,140,255,.18); border-radius:8px; font-size:13px; }
+  .item-result .ir-item { color:var(--text2); }
+  .item-result .ir-item b { color:var(--text); font-size:15px; }
+  .item-result .ir-item.rec b { color:var(--accent); }
+  .item-result .ir-item.avg-mm { display:inline-block; background:linear-gradient(135deg,rgba(52,211,153,.1),rgba(52,211,153,.05)); border:1px solid rgba(52,211,153,.3); border-radius:6px; padding:4px 10px; margin-top:6px; font-size:12px; color:#34d399; }
+  .item-result .ir-item.avg-mm b { color:#34d399; }
+  .apply-btn-sm { padding:5px 14px; border-radius:6px; font-size:12px; font-weight:600; background:var(--accent);
+    color:#fff; border:none; cursor:pointer; transition:all .2s; font-family:inherit; }
+  .apply-btn-sm:hover { background:var(--accent2); }
+  .item-actual-out { grid-column:1 / -1; }
+  @media (max-width:900px){
+    .main { grid-template-columns:1fr; padding:14px; }
+    .form-grid, .form-grid.cols-3, .form-grid.cols-4 { grid-template-columns:1fr 1fr; }
+    .results { grid-template-columns:1fr 1fr; }
+  .std-grid { grid-template-columns:1fr 1fr; }
+    .header { padding:14px 18px; }
+    .item-result { gap:10px; }
+    .fixed-cost-split { grid-template-columns:1fr; }
+  }
+
+/* ★ 子项净订单毛利率卡片样式 */
+.item-rate-card { background:var(--bg4); border:1px solid var(--border); border-radius:8px; padding:8px 12px; font-size:12px; min-width:140px; display:flex; flex-direction:column; }
+.item-rate-card.irc-pass { border-color:rgba(52,211,153,.4); }
+.item-rate-card.irc-fail { border-color:rgba(248,113,113,.4); }
+.irc-name { font-weight:600; margin-bottom:4px; font-size:11px; }
+.irc-badge { display:inline-block; padding:1px 5px; border-radius:3px; font-size:10px; font-weight:700; }
+.irc-row { display:flex; justify-content:space-between; margin:2px 0; }
+.irc-row span:first-child { color:var(--text2); }
+.irc-row span:last-child { color:var(--text); font-weight:600; text-align:right; }
+.irc-val { color:var(--accent) !important; font-size:14px; }
+.irc-tag { margin-top:4px; text-align:center; padding:2px 6px; border-radius:4px; font-weight:600; font-size:11px; }
+.irc-tag.pass { background:rgba(52,211,153,.12); color:#34d399; }
+.irc-tag.fail { background:rgba(248,113,113,.12); color:#f87171; }
+
+/* ★ 总推荐预算(含税合同) 核心数据高亮 */
+.rcard.contract-highlight {
+  background: linear-gradient(135deg, rgba(99,102,241,.15), rgba(168,85,247,.1));
+  border: 2px solid rgba(139,92,246,.5);
+  box-shadow: 0 0 20px rgba(139,92,246,.2), 0 4px 12px rgba(0,0,0,.3);
+}
+.rcard.contract-highlight .rl { font-size:13px; font-weight:600; }
+.rcard.contract-highlight .rl::before { content:'★ '; color:#a78bfa; }
+.rcard.contract-highlight .rv {
+  font-size:32px; font-weight:800;
+  background:linear-gradient(135deg,#c4b5fd,#a78bfa);
+  -webkit-background-clip:text; -webkit-text-fill-color:transparent;
+  background-clip:text;
+}
+.rcard.contract-highlight .rs { font-size:12px; color:var(--text2); }
+.rcard.contract-highlight:hover { transform:scale(1.03); box-shadow:0 0 30px rgba(139,92,246,.3), 0 8px 16px rgba(0,0,0,.4); }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h1>📊 项目预算损益表 PL 系统</h1>
+  <div class="header-controls">
+    <button class="btn-xs" onclick="resetAll()">🔄 重置</button>
+    <button class="btn-xs btn-xs-primary" onclick="autoFillDemo()">📝 填入示例</button>
+  </div>
+</div>
+
+<div class="main">
+
+  <div class="section section-full">
+    <div class="section-header"><span class="dot"></span>项目信息</div>
+    <div class="section-body">
+      <div class="form-grid cols-3">
+        <div class="fg"><label>项目名称 <span style="color:var(--red);">*</span></label><input type="text" id="projectName" placeholder="请输入项目名称" oninput="calcAll()"></div>
+        <div class="fg"><label>报价有效期 <span style="color:var(--red);">*</span></label><input type="text" id="quoteValidity" placeholder="如：30个工作日"></div>
+        <div class="fg"><label>客户名称 <span style="color:var(--red);">*</span></label><input type="text" id="customerName" placeholder="客户/单位名称"></div>
+        <div class="fg"><label>销售姓名 <span style="color:var(--red);">*</span></label><input type="text" id="salesName" placeholder="销售人员姓名"></div>
+        <div class="fg"><label>售前姓名</label><input type="text" id="presaleName" placeholder="售前人员姓名"></div>
+        <div class="fg"><label>销售电话 <span style="color:var(--red);">*</span></label><input type="text" id="salesPhone" placeholder="销售联系方式"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="section section-full">
+    <div class="section-header"><span class="dot"></span>子项成本与预算 <span style="font-size:12px;color:var(--text2);font-weight:400;margin-left:6px;">每个独立子项各自匹配「采购 → 预算 → 毛利」，混合项目=多子项各自达标（绝不平均）</span></div>
+    <div class="section-body">
+      <div class="items-toolbar">
+        <span class="hint">👉 单项目 = 1 个子项；含「定制开发 + 外采实施」等多类型 = 添加多个子项，每个用自己的业务类型与毛利率分别反算（上限与业务类型数一致）。</span>
+        <span id="itemCountHint" class="hint-count"></span>
+        <button id="addItemBtn" class="btn-xs btn-xs-primary" onclick="addItem()">＋ 添加子项</button>
+      </div>
+      <div id="itemsContainer"></div>
+    </div>
+  </div>
+
+  <!-- ============================================================ -->
+  <!-- ★ v30 新增：项目固定费用成本（与Excel R27-R34对齐） -->
+  <!--   分为两段：软件/服务项目 + 第三方采购项目 -->
+  <!--   这部分费用嵌入 SW/TP 成本（Excel R50 口径）-->
+  <!-- ============================================================ -->
+  <div class="section section-full">
+    <div class="section-header collapsible" onclick="toggleCollapse(this)"><span class="dot"></span>项目固定费用成本 <span style="font-size:11px;color:var(--text2);font-weight:400;">（嵌入软件/服务成本 &amp; 第三方成本）</span></div>
+    <div class="section-body cc-content" id="fixedCostBody">
+      <div class="fixed-cost-split">
+        <!-- 左侧：软件/服务项目的固定费用 -->
+        <div class="fixed-cost-group">
+          <div class="fixed-cost-group-title">📦 软件/服务项目</div>
+          <div class="form-grid">
+            <div class="fg"><label>合同会议费</label><input type="number" class="input-blue" id="swFixed_meetingFee" placeholder="元" oninput="calcAll()"></div>
+            <div class="fg"><label>代理费</label><input type="number" class="input-blue" id="swFixed_agencyFee" placeholder="元" oninput="calcAll()"></div>
+            <div class="fg"><label>技术联络费</label><input type="number" class="input-blue" id="swFixed_techFee" placeholder="元" oninput="calcAll()"></div>
+            <div class="fg"><label>中标服务费</label><input type="number" class="input-blue" id="swFixed_bidFee" placeholder="元" oninput="calcAll()"></div>
+            <div class="fg"><label>项目评测费</label><input type="number" class="input-blue" id="swFixed_evalFee" placeholder="元" oninput="calcAll()"></div>
+          </div>
+          <div class="divider" style="margin-top:10px;"></div>
+          <div class="frow orange"><span class="fl">软件/服务费用合计</span><span class="fv" id="swFixedTotal">¥0</span></div>
+        </div>
+        <!-- 右侧：第三方采购项目的固定费用 -->
+        <div class="fixed-cost-group">
+          <div class="fixed-cost-group-title">📦 第三方采购项目</div>
+          <div class="form-grid">
+            <div class="fg"><label>合同会议费</label><input type="number" class="input-blue" id="tpFixed_meetingFee" placeholder="元" oninput="calcAll()"></div>
+            <div class="fg"><label>代理费</label><input type="number" class="input-blue" id="tpFixed_agencyFee" placeholder="元" oninput="calcAll()"></div>
+            <div class="fg"><label>技术联络费</label><input type="number" class="input-blue" id="tpFixed_techFee" placeholder="元" oninput="calcAll()"></div>
+            <div class="fg"><label>中标服务费</label><input type="number" class="input-blue" id="tpFixed_bidFee" placeholder="元" oninput="calcAll()"></div>
+            <div class="fg"><label>项目评测费</label><input type="number" class="input-blue" id="tpFixed_evalFee" placeholder="元" oninput="calcAll()"></div>
+          </div>
+          <div class="divider" style="margin-top:10px;"></div>
+          <div class="frow orange"><span class="fl">第三方采购费用合计</span><span class="fv" id="tpFixedTotal">¥0</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============================================================ -->
+  <!-- 项目费用（悦报销设置费用）— 与 Excel R36-R45 对齐 -->
+  <!-- ============================================================ -->
+  <div class="section">
+    <div class="section-header collapsible" onclick="toggleCollapse(this)"><span class="dot"></span>市场拓展管理费 <span style="font-size:11px;color:var(--text2);font-weight:400;">（悦报销）</span></div>
+    <div class="section-body cc-content" id="marketBody">
+      <div class="form-grid">
+        <div class="fg"><label>业务招待费</label><input type="number" class="input-blue" id="entertainmentFee" placeholder="元" oninput="calcAll()"><div class="over-msg" id="over_entertainmentFee"></div><div class="limit-hint" id="hint_entertainmentFee">金额上限：净订单(净值)×3.7% = <span class="lim-val">--</span></div></div>
+      </div>
+      <div class="form-grid" style="margin-top:10px;">
+        <div class="fg"><label>办公费（快递费、打印费）</label><input type="number" class="input-blue" id="officeFee" placeholder="元" oninput="calcAll()"><div class="over-msg" id="over_officeFee"></div></div>
+        <div class="fg"><label>市内交通费</label><input type="number" class="input-blue" id="trafficFee" placeholder="元" oninput="calcAll()"><div class="over-msg" id="over_trafficFee"></div></div>
+        <div class="fg"><label>福利费</label><input type="number" class="input-blue" id="welfareFee" placeholder="元" oninput="calcAll()"><div class="over-msg" id="over_welfareFee"></div></div>
+        <div class="fg"><label>差旅费</label><input type="number" class="input-blue" id="travelFee" placeholder="元" oninput="calcAll()"><div class="over-msg" id="over_travelFee"></div></div>
+      </div>
+      <div class="divider"></div>
+      <!-- ★ v31 新增：四项费用小计（Excel 对应行，2% 上限） -->
+      <div class="frow"><span class="fl">四项费用小计</span><span class="fv" id="mkt4Subtotal" style="color:var(--accent)">¥0</span></div>
+      <div class="limit-hint" id="hint_marketGroup" style="font-size:13px;">金额上限：净订单(净值)×<strong>2%</strong>（办公费＋市内交通费＋福利费＋差旅费）= <span class="lim-val">--</span><span id="over_marketGroup"></span></div>
+      <div class="divider"></div>
+      <div class="frow"><span class="fl">市场拓展管理费 — 费用小计</span><span class="fv" id="marketFeeTotal" style="color:var(--orange)">¥0</span></div>
+    </div>
+  </div>
+
+  <!-- ★ v30 修正：项目管理费仅保留 Excel R37-R43 右侧的项目管理费项 -->
+  <div class="section">
+    <div class="section-header collapsible" onclick="toggleCollapse(this)"><span class="dot"></span>项目管理费 <span style="font-size:11px;color:var(--text2);font-weight:400;">（悦报销）</span></div>
+    <div class="section-body cc-content" id="pmBody">
+      <div class="form-grid">
+        <div class="fg"><label>市内交通费</label><input type="number" class="input-blue" id="pm_trafficFee" placeholder="元" oninput="calcAll()"><div class="over-msg" id="over_pm_trafficFee"></div><div class="limit-hint" id="hint_pmTraffic">金额上限：净订单(净值)×2% = <span class="lim-val">--</span></div></div>
+        <div class="fg"><label>租赁费（项目宿舍房租水电）</label><input type="number" class="input-blue" id="pm_rentFee" placeholder="元" oninput="calcAll()"><div class="over-msg" id="over_pm_rentFee"></div></div>
+        <div class="fg"><label>日常办公费（快递、打印等其他费用）</label><input type="number" class="input-blue" id="pm_dailyOfficeFee" placeholder="元" oninput="calcAll()"><div class="over-msg" id="over_pm_dailyOfficeFee"></div></div>
+        <div class="fg"><label>福利费</label><input type="number" class="input-blue" id="pm_welfareFee" placeholder="元" oninput="calcAll()"><div class="over-msg" id="over_pm_welfareFee"></div></div>
+        <div class="fg"><label>差旅费</label><input type="number" class="input-blue" id="pm_travelFee" placeholder="元" oninput="calcAll()"><div class="over-msg" id="over_pm_travelFee"></div></div>
+        <div class="fg"><label>车辆费用（项目租赁用车相关费用）</label><input type="number" class="input-blue" id="pm_vehicleFee" placeholder="元" oninput="calcAll()"><div class="over-msg" id="over_pm_vehicleFee"></div></div>
+      </div>
+      <div class="divider"></div>
+      <div class="limit-hint" id="hint_pmTotal" style="font-size:13px;">金额上限：净订单(净值)×<strong>2%</strong>（市内交通费＋租赁费＋日常办公费＋福利费＋差旅费＋车辆费用）= <span class="lim-val">--</span><span id="over_pmTotal"></span></div>
+      <div class="divider"></div>
+      <div class="frow"><span class="fl">项目管理费 — 费用小计</span><span class="fv" id="pmFeeTotal" style="color:var(--orange)">¥0</span></div>
+    </div>
+  </div>
+
+  <!-- ============================================================ -->
+  <!-- ★ v31 新增：项目费用合计（悦报销）— 与Excel底部对齐 -->
+  <!--   项目费用合计 = 市场拓展管理费 + 项目管理费 -->
+  <!-- ============================================================ -->
+  <div class="section section-full">
+    <div class="section-header"><span class="dot"></span>项目费用合计（悦报销设置费用）</div>
+    <div class="section-body">
+      <div class="frow hl"><span class="fl">市场拓展管理费</span><span class="fv" id="totalMktFee" style="color:var(--text2)">¥0</span></div>
+      <div class="frow hl"><span class="fl">项目管理费</span><span class="fv" id="totalPmFee" style="color:var(--text2)">¥0</span></div>
+      <div class="divider"></div>
+      <div class="frow orange" style="font-size:15px;"><span class="fl"><strong>项目费用合计</strong></span><span class="fv" id="totalExpense" style="font-size:18px;">¥0</span></div>
+    </div>
+  </div>
+
+  <div class="section section-full">
+    <div class="section-header collapsible" onclick="toggleCollapse(this)"><span class="dot"></span>收款信息</div>
+    <div class="section-body cc-content" id="paymentBody">
+      <div class="form-grid cols-4">
+        <div class="fg"><label>阶段一收款比例(%)</label><input type="number" class="input-blue" id="pay1Pct" placeholder="%" step="0.1" oninput="calcAll()"></div>
+        <div class="fg"><label>阶段二收款比例(%)</label><input type="number" class="input-blue" id="pay2Pct" placeholder="%" step="0.1" oninput="calcAll()"></div>
+        <div class="fg"><label>阶段三收款比例(%)</label><input type="number" class="input-blue" id="pay3Pct" placeholder="%" step="0.1" oninput="calcAll()"></div>
+        <div class="fg"><label>阶段四收款比例(%)</label><input type="number" class="input-blue" id="pay4Pct" placeholder="%" step="0.1" oninput="calcAll()"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="section section-full">
+    <div class="section-header"><span class="dot"></span>📈 项目总览 — 采购 / 预算 / 毛利 匹配</div>
+    <div class="section-body">
+      <div class="results">
+        <div class="rcard neutral"><div class="rl">总采购成本(除税)</div><div class="rv" id="sumCostExTax">¥0</div><div class="rs">所有子项成本合计</div></div>
+        <div class="rcard neutral"><div class="rl">总推荐收入(除税)</div><div class="rv" id="sumRevExTax">¥0</div><div class="rs">各子项反算合计</div></div>
+        <div class="rcard contract-highlight" id="card_contract"><div class="rl">总推荐预算(含税合同)</div><div class="rv" id="sumContract">¥0</div><div class="rs">对外签单总额</div></div>
+        <div class="rcard" id="card_overallRate"><div class="rl">整体净订单毛利率 ★</div><div class="rv" id="r_overallRate">0%</div><div class="rs" id="r_overallStatus"></div></div>
+      </div>
+
+      <!-- ★ 子项净订单毛利率卡片展示区（多子项各自独立显示） -->
+      <div class="section-header" style="font-size:12px;color:var(--text2);margin-top:14px;padding:0 14px 6px;">各子项净订单毛利率</div>
+      <div id="itemRatesContainer" style="display:flex;flex-wrap:wrap;gap:8px;padding:12px 14px 14px;align-items:flex-start;"></div>
+    </div>
+  </div>
+
+  <div class="section section-full">
+    <div class="section-header"><span class="dot"></span>项目净订单毛利率标准（参考）</div>
+    <div class="section-body">
+      <div class="std-grid" id="stdGrid"></div>
+    </div>
+  </div>
+
+  <!-- ★ 项目损益总表 -->
+  <div class="section section-full">
+    <div class="section-header"><span class="dot"></span>项目损益总表</div>
+    <div class="section-body">
+      <table class="pl-summary-table" id="plSummaryTable">
+        <colgroup><col class="c-label"><col class="c-val"><col class="c-note"></colgroup>
+        <tbody id="plSummaryBody">
+          <tr><td colspan="3" style="text-align:center;color:var(--text2);padding:20px;">暂无数据，请添加子项后重新计算</td></tr>
+        </tbody>
+      </table>
+      <div class="pl-note-box" id="plNoteBox">
+        <strong>备注（低于标准净订单毛利说明）：</strong><br>
+        • 自研软件产品销售项目净订单毛利率不低于 <b>60%</b>；<br>
+        • 软件定制化开发项目净订单毛利率不低于 <b>45%</b>；<br>
+        • 集成实施项目（外采硬件+部署）项目净订单净利率不低于 <b>60%</b>；<br>
+        • 运维维保项目净订单毛利率不低于 <b>40%</b>；<br>
+        • 人力框架项目净订单毛利率不低于 <b>30%</b>；<br>
+        • 系统集成项目（外采软硬件+交付）项目毛利率不低于 <b>20%</b>；<br>
+        • 系统集成项目（外采服务+交付）项目毛利率不低于 <b>20%</b>。<br>
+        <strong>公式说明：</strong>项目净订单毛利率 = 项目净订单毛利润 / 净订单（净值）；<br>
+        项目毛利率 = 项目净订单毛利润 / 不含税收入
+      </div>
+    </div>
+  </div>
+
+  <div class="action-bar">
+    <button class="btn btn-primary" onclick="calcAll()">⚡ 重新计算</button>
+    <button class="btn btn-secondary" onclick="generatePLTable()">📊 生成PL表</button>
+    <button class="btn btn-secondary" onclick="generateQuote()">💰 生成正式报价单</button>
+    <button class="btn btn-secondary" onclick="exportJSON()">📋 导出JSON</button>
+    <button class="btn btn-secondary" onclick="showGuide()">📄 导出Excel指南</button>
+    <button class="btn btn-secondary" onclick="saveState()">💾 保存状态</button>
+    <button class="btn btn-secondary" onclick="loadState()">📂 加载状态</button>
+  </div>
+
+</div>
+
+<div class="modal-overlay" id="jsonModal">
+  <div class="modal">
+    <h3>📋 导出JSON数据</h3>
+    <p style="color:var(--text2);font-size:12px;margin-bottom:10px;">复制下方JSON，保存为 pl_data.json 后运行 Python 脚本生成Excel：</p>
+    <pre id="jsonOutput"></pre>
+    <div class="ma">
+      <button class="btn btn-primary" onclick="copyJSON()">📋 复制到剪贴板</button>
+      <button class="btn btn-secondary" onclick="closeModal('jsonModal')">关闭</button>
+    </div>
+    <div class="tip-box">
+      <strong>导出Excel步骤：</strong><br>
+      1. 复制上方JSON → 保存为 <code>pl_data.json</code><br>
+      2. 运行：<code>python generate_pl_export.py pl_data.json</code><br>
+      3. Excel文件生成在桌面，公式完整保留
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="guideModal">
+  <div class="modal">
+    <h3>📄 导出Excel完整指南</h3>
+    <div class="tip-box">
+      <strong>方法一：直接用已生成的演示文件</strong><br>
+      桌面已有 <code>项目预算损益表_PL表.xlsx</code>，打开后在蓝色边框单元格填入数据即可。
+    </div>
+    <div class="tip-box" style="margin-top:10px;">
+      <strong>方法二：从本系统导出完整数据 → 生成Excel</strong><br>
+      1. 在本系统填写所有数据<br>
+      2. 点击「导出JSON」→ 复制JSON<br>
+      3. 保存为 <code>pl_data.json</code><br>
+      4. 运行：<code>python generate_pl_export.py pl_data.json</code>
+    </div>
+    <div class="ma" style="margin-top:14px;">
+      <button class="btn btn-secondary" onclick="closeModal('guideModal')">我知道了</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// SheetJS 可选：优先使用 CDN，失败时回退到原生 HTML-Excel 下载
+var xlsxLoaded = false;
+// ============================================================
+// 配置数据
+// ============================================================
+var BIZ_KEYS = ['self_software','custom_dev','integration_impl','maintenance','hr_frame','sys_integration','service_integration'];
+var BIZ_TYPES = {
+  self_software:      { name:'自研软件产品销售项目', remark:'', targetRate:0.60, inTax:0.13 },
+  custom_dev:         { name:'软件定制化开发项目',   remark:'', targetRate:0.45, inTax:0.06 },
+  integration_impl:   { name:'集成实施项目',         remark:'（外采硬件+部署）', targetRate:0.60, inTax:0.06 },
+  maintenance:        { name:'运行维护项目',         remark:'', targetRate:0.40, inTax:0.06 },
+  hr_frame:           { name:'人力框架项目',         remark:'', targetRate:0.30, inTax:0.06 },
+  sys_integration:    { name:'系统集成项目',         remark:'（外采软硬件+交付）', targetRate:0.20, inTax:0.13 },
+  service_integration:{ name:'服务集成项目',         remark:'（外采服务+交付）', targetRate:0.20, inTax:0.06 }
+};
+
+// 获取带备注的完整名称（如"集成实施项目（外采硬件+部署）"）
+function getTypeName(key) {
+  var bt = BIZ_TYPES[key];
+  return bt ? (bt.name + (bt.remark || '')) : key;
+}
+
+var ROLE_PRESETS = [
+  { key:'dev_general', label:'一般研发',   cost:18000 },
+  { key:'bigdata',     label:'大数据',     cost:23000 },
+  { key:'algorithm',   label:'算法工程师', cost:30000 },
+  { key:'custom',      label:'自定义',     cost:0 }
+];
+
+var itemIdCounter = 0;
+var staffRowIdCounter = 0;
+
+// ============================================================
+// 工具函数
+// ============================================================
+function fv(id) {
+  var el = document.getElementById(id);
+  if (!el || el.value === '' || el.value === null) return 0;
+  return parseFloat(el.value) || 0;
+}
+function gv(id) { var el = document.getElementById(id); return el ? el.value : ''; }
+function fmt(n) {
+  if (n == null || isNaN(n)) return '¥0';
+  return '¥' + Number(n).toLocaleString('zh-CN', { minimumFractionDigits:0, maximumFractionDigits:0 });
+}
+function pct(n) { return isNaN(n) ? '0.0%' : (n*100).toFixed(1) + '%'; }
+function setText(id, val) {
+  var el = document.getElementById(id);
+  if (el) el.textContent = val;
+}
+function setVal(id, val) {
+  var el = document.getElementById(id);
+  if (!el) return;
+  el.value = (val && val !== 0) ? val : '';
+}
+
+// ============================================================
+// 子项 line item 管理
+// ============================================================
+function addItem(typeKey, data) {
+  try {
+    var MAX_ITEMS = BIZ_KEYS.length;
+    var curCount = document.querySelectorAll('.item-card').length;
+    if (curCount >= MAX_ITEMS) {
+      alert('子项数量已达上限（' + MAX_ITEMS + ' 个），与业务类型数量一致。如需新增，请先删除已有子项。');
+      return;
+    }
+    itemIdCounter = itemIdCounter + 1;
+    var iid = itemIdCounter;
+    var tk = (typeKey || (data && data.type)) || 'custom_dev';
+    if (!BIZ_TYPES[tk]) tk = 'custom_dev';
+
+    var typeOpts = '';
+    for (var k = 0; k < BIZ_KEYS.length; k++) {
+      var key = BIZ_KEYS[k];
+      var sel = (key === tk) ? ' selected' : '';
+      typeOpts += '<option value="' + key + '"' + sel + '>' + getTypeName(key) + '</option>';
+    }
+
+    var card = document.createElement('div');
+    card.className = 'item-card';
+    card.setAttribute('data-item-id', iid);
+    card.innerHTML =
+      '<div class="item-head">' +
+        '<input type="text" class="item-name" id="itemName_' + iid + '" placeholder="子项名称（如：平台定制开发 / 外采软件实施部署）" value="' + ((data && data.name) ? data.name : '') + '">' +
+        '<select class="item-type" id="itemType_' + iid + '" onchange="onItemTypeChange(' + iid + ')">' + typeOpts + '</select>' +
+        '<span class="item-meta" id="itemMeta_' + iid + '"></span>' +
+        '<button class="btn-del-row" onclick="removeItem(' + iid + ')">删除子项</button>' +
+      '</div>' +
+      '<div class="item-body">' +
+        '<div class="staff-block">' +
+          '<div class="staff-toolbar"><span style="font-size:12px;color:var(--text2);">👥 人工成本（角色自动带单价，填人天自动算人月）</span>' +
+            '<button class="btn-xs btn-xs-primary" onclick="addStaffToItem(' + iid + ')">＋ 添加人员</button></div>' +
+          '<table class="staff-table"><thead><tr>' +
+            '<th style="width:26%">角色</th><th style="width:22%">月均成本</th><th style="width:18%">人天</th><th style="width:16%">人月</th><th style="width:18%">小计</th>' +
+          '</tr></thead><tbody id="staffBody_' + iid + '"></tbody></table>' +
+        '</div>' +
+        '<div class="form-grid cols-4" style="margin-top:10px;">' +
+          '<div class="fg"><label>外包成本<span class="tax-tag">6%</span></label><input type="number" class="input-blue" id="itemOut_' + iid + '" placeholder="含税" oninput="calcAll()"></div>' +
+          '<div class="fg"><label>软硬件采购<span class="tax-tag">13%</span></label><input type="number" class="input-blue" id="itemHw_' + iid + '" placeholder="含税" oninput="calcAll()"></div>' +
+          '<div class="fg"><label>施工成本<span class="tax-tag">9%</span></label><input type="number" class="input-blue" id="itemCs_' + iid + '" placeholder="含税" oninput="calcAll()"></div>' +
+          '<div class="fg"><label>其他成本<span class="tax-tag">无税</span></label><input type="number" class="input-blue" id="itemOther_' + iid + '" placeholder="元" oninput="calcAll()"></div>' +
+        '</div>' +
+        '<div class="item-result" id="itemResult_' + iid + '"></div>' +
+        '<div class="form-grid" style="margin-top:8px;">' +
+          '<div class="fg"><label>实际合同金额(含税) — 留空则只看推荐</label><input type="number" class="input-blue" id="itemActual_' + iid + '" placeholder="实际签单金额" oninput="calcAll()"></div>' +
+          '<div class="fg item-actual-out" id="itemActualOut_' + iid + '"></div>' +
+        '</div>' +
+      '</div>';
+
+    document.getElementById('itemsContainer').appendChild(card);
+
+    if (data && data.staff && data.staff.length) {
+      for (var s = 0; s < data.staff.length; s++) {
+        addStaffToItem(iid, data.staff[s].roleKey, data.staff[s].cost, data.staff[s].days);
+      }
+    } else {
+      addStaffToItem(iid);
+    }
+
+    if (data) {
+      setVal('itemOut_' + iid, data.outsource);
+      setVal('itemHw_' + iid, data.hwSw);
+      setVal('itemCs_' + iid, data.tpCS);
+      setVal('itemOther_' + iid, data.other);
+      setVal('itemActual_' + iid, data.actual);
+    }
+
+    calcAll();
+    refreshItemsToolbar();
+  } catch (e) {
+    console.error('addItem error:', e);
+    alert('添加子项出错: ' + e.message);
+  }
+}
+
+function removeItem(iid) {
+  var card = document.querySelector('.item-card[data-item-id="' + iid + '"]');
+  if (card) { card.remove(); calcAll(); refreshItemsToolbar(); }
+}
+
+function refreshItemsToolbar() {
+  var MAX_ITEMS = BIZ_KEYS.length;
+  var cur = document.querySelectorAll('.item-card').length;
+  var btn = document.getElementById('addItemBtn');
+  var hint = document.getElementById('itemCountHint');
+  if (btn) {
+    if (cur >= MAX_ITEMS) { btn.disabled = true; btn.classList.add('is-disabled'); btn.title = '已达子项上限（' + MAX_ITEMS + ' 个）'; }
+    else { btn.disabled = false; btn.classList.remove('is-disabled'); btn.title = ''; }
+  }
+  if (hint) hint.textContent = '（当前 ' + cur + ' / ' + MAX_ITEMS + ' 子项）';
+}
+
+function onItemTypeChange(iid) { calcAll(); }
+
+// ============================================================
+// 子项内人员管理
+// ============================================================
+function addStaffToItem(iid, roleKey, cost, days) {
+  try {
+    staffRowIdCounter = staffRowIdCounter + 1;
+    var rid = staffRowIdCounter;
+
+    var roleOpts = '';
+    for (var i = 0; i < ROLE_PRESETS.length; i++) {
+      var r = ROLE_PRESETS[i];
+      var sel = (r.key === (roleKey || 'dev_general')) ? ' selected' : '';
+      roleOpts += '<option value="' + r.key + '"' + sel + '>' + r.label + ' (' + fmt(r.cost) + '/月)</option>';
+    }
+
+    var defaultCost = 18000;
+    if (roleKey) { for (var j = 0; j < ROLE_PRESETS.length; j++) { if (ROLE_PRESETS[j].key === roleKey) defaultCost = ROLE_PRESETS[j].cost || 18000; } }
+    else if (cost) defaultCost = cost;
+
+    var body = document.getElementById('staffBody_' + iid);
+    if (!body) return;
+    var tr = document.createElement('tr');
+    tr.id = 'staffRow_' + rid;
+    tr.setAttribute('data-rid', rid);
+    tr.innerHTML =
+      '<td><select onchange="onStaffRoleChange(' + rid + ',this.value)">' + roleOpts + '</select></td>' +
+      '<td><input type="number" id="staffCost_' + rid + '" value="' + defaultCost + '" placeholder="月均成本" step="1000" oninput="calcAll()"></td>' +
+      '<td><input type="number" id="staffDays_' + rid + '" value="' + (days || '') + '" placeholder="人天" step="1" oninput="calcAll()"></td>' +
+      '<td class="row-mm" id="staffMM_' + rid + '">0.00</td>' +
+      '<td class="row-sub" id="staffSub_' + rid + '">¥0</td>' +
+      '<td><button class="btn-del-row" onclick="removeStaffRow(' + rid + ',' + iid + ')">×</button></td>';
+    body.appendChild(tr);
+    calcAll();
+  } catch (e) { console.error('addStaffToItem error:', e); }
+}
+
+function removeStaffRow(rid, iid) {
+  var row = document.getElementById('staffRow_' + rid);
+  if (row) { row.remove(); calcAll(); }
+}
+
+function onStaffRoleChange(rid, roleKey) {
+  var cost = 18000;
+  for (var i = 0; i < ROLE_PRESETS.length; i++) { if (ROLE_PRESETS[i].key === roleKey) { cost = ROLE_PRESETS[i].cost; } }
+  if (cost > 0) { var el = document.getElementById('staffCost_' + rid); if (el) el.value = cost; calcAll(); }
+}
+
+function getStaffDataForItem(iid) {
+  var rows = [];
+  var body = document.getElementById('staffBody_' + iid);
+  if (!body) return rows;
+  var trs = body.querySelectorAll('tr');
+  for (var i = 0; i < trs.length; i++) {
+    var tr = trs[i]; var rid = tr.getAttribute('data-rid');
+    if (!rid) continue;
+    var roleSel = tr.querySelector('select');
+    var costEl = tr.querySelector('input[id="staffCost_' + rid + '"]');
+    var daysEl = tr.querySelector('input[id="staffDays_' + rid + '"]');
+    if (roleSel && costEl && daysEl) {
+      var roleText = roleSel.options[roleSel.selectedIndex].text;
+      var roleLabel = roleText.split('(')[0].trim();
+      var days = parseFloat(daysEl.value) || 0;
+      var cost = parseFloat(costEl.value) || 0;
+      var mm = days / 20.67;
+      var mmEl = tr.querySelector('#staffMM_' + rid); if (mmEl) mmEl.textContent = mm.toFixed(2);
+      var sub = cost * mm; var subEl = tr.querySelector('#staffSub_' + rid); if (subEl) subEl.textContent = fmt(sub);
+      rows.push({ rid: rid, roleKey: roleSel.value, roleLabel: roleLabel, cost: cost, days: days, mm: mm });
+    }
+  }
+  return rows;
+}
+
+// ============================================================
+// 核心计算引擎 — 子项独立反算，绝无平均
+// ============================================================
+// ★ v32: 全局数组，供 calcAll 和导出函数共享
+window.itemsInfo = [];
+
+function calcAll() {
+  try {
+    itemsInfo = [];
+    var cards = document.querySelectorAll('.item-card');
+    var totalCostExTax = 0, totalRevExTax = 0, totalContract = 0;
+    var minTargetRate = 1;
+    var itemsRaw = [];
+
+    for (var c = 0; c < cards.length; c++) {
+      var card = cards[c]; var iid = card.getAttribute('data-item-id');
+      if (!iid) continue;
+      var typeEl = document.getElementById('itemType_' + iid); if (!typeEl) continue;
+      var typeKey = typeEl.value; var bt = BIZ_TYPES[typeKey] || BIZ_TYPES.custom_dev;
+
+      // ---- 人工成本（除税，即直接成本） ----
+      var staff = getStaffDataForItem(iid); var laborCost = 0;
+      for (var s = 0; s < staff.length; s++) laborCost += staff[s].cost * staff[s].mm;
+
+      // ---- 外采成本（按各自税率除税） ----
+      var outTax = fv('itemOut_' + iid) / 1.06; var hwTax  = fv('itemHw_' + iid) / 1.13;
+      var csTax  = fv('itemCs_' + iid) / 1.09;     var other  = fv('itemOther_' + iid);
+
+      // ---- 成本分量拆分 ----
+      var itemSwCost = laborCost + outTax;   // 软件/服务：人工 + 外包
+      var itemTpCost = hwTax + csTax + other; // 第三方采购：硬件 + CS + 其他
+      var itemCost = laborCost + outTax + hwTax + csTax + other;
+
+      itemsRaw.push({ iid: iid, bt: bt, typeKey: typeKey, itemCost: itemCost,
+        swCost: itemSwCost, tpCost: itemTpCost });
+      if (bt.targetRate < minTargetRate) minTargetRate = bt.targetRate;
+      totalCostExTax += itemCost;
+    }
+
+    // ---- ★ v30：项目固定费用成本（与Excel R27-R34对齐，嵌入SW/TP成本）----
+    var swFixedItems = [fv('swFixed_meetingFee'), fv('swFixed_agencyFee'),
+                        fv('swFixed_techFee'),    fv('swFixed_bidFee'),
+                        fv('swFixed_evalFee')];
+    var tpFixedItems = [fv('tpFixed_meetingFee'), fv('tpFixed_agencyFee'),
+                        fv('tpFixed_techFee'),    fv('tpFixed_bidFee'),
+                        fv('tpFixed_evalFee')];
+    var swFixedSum = 0, tpFixedSum = 0;
+    for (var si = 0; si < swFixedItems.length; si++) swFixedSum += swFixedItems[si];
+    for (var ti = 0; ti < tpFixedItems.length; ti++) tpFixedSum += tpFixedItems[ti];
+    setText('swFixedTotal', fmt(swFixedSum));
+    setText('tpFixedTotal', fmt(tpFixedSum));
+
+    // ---- 全局悦报销固定费用（项目级，从净利润扣减） ----
+    var mkt = [fv('entertainmentFee'),fv('officeFee'),fv('trafficFee'),fv('welfareFee'),fv('travelFee')];
+    // ★ v30 修正PM字段：仅保留Excel R37-R43右侧的项目管理费项（去掉误入的5项固定费用成本项）
+    var pm  = [fv('pm_trafficFee'),fv('pm_rentFee'),fv('pm_dailyOfficeFee'),
+               fv('pm_welfareFee'),fv('pm_travelFee'),fv('pm_vehicleFee')];
+    var mktSum = 0, pmSum = 0;
+    for (var a = 0; a < mkt.length; a++) mktSum += mkt[a];
+    for (var b = 0; b < pm.length; b++) pmSum += pm[b];
+    var mktTax = mktSum / 1.06; var pmTax = pmSum / 1.06;
+    // ★ v31: 四项费用小计（办公+交通+福利+差旅）
+    var mkt4Sum = fv('officeFee') + fv('trafficFee') + fv('welfareFee') + fv('travelFee');
+    setText('mkt4Subtotal', fmt(mkt4Sum));
+    setText('marketFeeTotal', fmt(mktSum));
+    setText('pmFeeTotal', fmt(pmSum));
+    // ★ v31: 项目费用合计
+    setText('totalMktFee', fmt(mktSum));
+    setText('totalPmFee', fmt(pmSum));
+    setText('totalExpense', fmt(mktSum + pmSum));
+
+    // ---- 第二遍：反算收入 + 分摊悦报销费用 ----
+    // ★ v30: swFixedSum/tpFixedSum 按SW:TP成本比例分摊到各子项的swCost/tpCost中
+    // （这样SW成本=人工外包+分摊固定费，与Excel R50"软件/服务成本（人工成本、委外成本、固定费用成本）"一致）
+    var denomBase = totalCostExTax > 0 ? totalCostExTax : 1;
+    var totalSwDirect = 0, totalTpDirect = 0;
+    for (var rx = 0; rx < itemsRaw.length; rx++) { totalSwDirect += itemsRaw[rx].swCost; totalTpDirect += itemsRaw[rx].tpCost; }
+
+    for (var p = 0; p < itemsRaw.length; p++) {
+      var it = itemsRaw[p];
+      var share = totalCostExTax > 0 ? it.itemCost / denomBase : 0;
+      var mkt_i = mktTax * share; var pm_i = pmTax * share;
+
+      // ★ v30: 分摊固定费用成本到 SW/TP
+      var swFixedShare = (totalSwDirect > 0) ? (it.swCost / totalSwDirect) * swFixedSum : 0;
+      var tpFixedShare = (totalTpDirect > 0) ? (it.tpCost / totalTpDirect) * tpFixedSum : 0;
+
+      // 反算收入：用纯直接成本（不含任何费用），避免循环依赖
+      var swCostTotal_i = it.itemCost;
+      R_i = swCostTotal_i / (1 - it.bt.targetRate);
+      if (R_i < 0) R_i = 0;
+      var contract_i = R_i * (1 + it.bt.inTax);
+
+      // ★ v36: 口径与 Excel 一致，净订单毛利率 = 毛利润/净订单(净值)，均不扣悦报销
+      var itemGross_i = R_i - it.itemCost;
+      var itemNetOrder_i = R_i;
+      var itemRate_i = (R_i > 0 && itemNetOrder_i > 0) ? (itemGross_i / itemNetOrder_i) : 0;
+
+      // 实际合同对比（v36: 口径同上，不扣悦报销）
+      var actual = fv('itemActual_' + it.iid);
+      var actualRev = (actual > 0) ? actual / (1 + it.bt.inTax) : 0;
+      var actualGross = actualRev - it.itemCost;
+      var actualNet   = actualRev;
+      var actualRate  = (actual > 0) ? ((actualNet > 0) ? actualGross / actualNet : -1) : null;
+
+      setItemMeta(it.iid, it.bt, it.itemCost, R_i, contract_i, itemRate_i, actualRev, actualRate);
+
+      totalRevExTax  += R_i;
+      totalContract  += contract_i;
+      // ★ v30: itemsInfo 携带分摊后的固定费用成本
+      itemsInfo.push({ iid: it.iid, bt: it.bt, typeKey: it.typeKey, itemCost: it.itemCost,
+        neededRev: R_i, neededContract: contract_i, netOrder_i: itemNetOrder_i, itemRate_i: itemRate_i,
+        swCost: (it.swCost || 0) + swFixedShare,   // 含分摊固定费
+        tpCost: (it.tpCost || 0) + tpFixedShare,    // 含分摊固定费
+        swFixedShare: swFixedShare, tpFixedShare: tpFixedShare });
+    }
+
+    // ---- 项目级实际值（v36: 口径与 Excel 一致，净订单毛利率 = 毛利润/净订单(净值)，均不扣悦报销） ----
+    var projActualRev = 0, projActualCost = 0;
+    for (var p2 = 0; p2 < itemsRaw.length; p2++) {
+      var it2 = itemsRaw[p2];
+      var actual2 = fv('itemActual_' + it2.iid);
+      if (actual2 > 0) {
+        var aRev = actual2 / (1 + it2.bt.inTax);
+        projActualRev += aRev;
+        projActualCost += it2.itemCost;
+      }
+    }
+    var projActualGross = projActualRev - projActualCost;  // 净订单毛利润（不含悦报销）
+    var projActualNet = projActualRev;  // 净订单(净值) = 收入，不扣悦报销
+    var projActualRate = (projActualNet > 0) ? (projActualGross / projActualNet) : 0;
+
+    // ---- 整体净订单毛利率（v34: 口径与子项一致，扣除悦报销费用） ----
+    var sumTpCost = 0;
+    for (var q = 0; q < itemsInfo.length; q++) sumTpCost += (itemsInfo[q].tpCost || 0);
+    var projG = totalRevExTax - totalCostExTax - swFixedSum - tpFixedSum - mktTax - pmTax;
+    var netO = totalRevExTax - mktTax - pmTax;
+    var overallNetRate = (netO > 0) ? (projG / netO) : 0;
+    var overallTargetRate = minTargetRate;
+
+    // ---- 汇总面板（v35: 优先显示实际净订单毛利率） ----
+    var displayOverallRate = (projActualRev > 0) ? projActualRate : overallNetRate;
+    setText('sumCostExTax', fmt(totalCostExTax));
+    setText('sumRevExTax', fmt(totalRevExTax));
+    setText('sumContract', fmt(totalContract));
+    setText('r_overallRate', pct(displayOverallRate));
+
+    var pass = displayOverallRate >= overallTargetRate;
+    var cardR = document.getElementById('card_overallRate');
+    var statusEl = document.getElementById('r_overallStatus');
+    if (cardR) cardR.className = 'rcard ' + (pass ? 'positive' : 'negative');
+    if (statusEl) {
+      if (pass) statusEl.innerHTML = '<span class="sb sb-pass">✓ 达标 ≥' + Math.round(overallTargetRate * 100) + '%</span>';
+      else { var diff = ((overallTargetRate - displayOverallRate) * 100).toFixed(1); statusEl.innerHTML = '<span class="sb sb-fail">✗ 差 ' + diff + '%</span>'; }
+    }
+
+    window._calcAll = {
+      totalCostExTax: totalCostExTax, totalRevExTax: totalRevExTax, totalContract: totalContract,
+      overallNetRate: overallNetRate, overallTargetRate: overallTargetRate, items: itemsInfo,
+      swFixedSum: swFixedSum, tpFixedSum: tpFixedSum
+    };
+
+    checkFeeLimits(netO);
+    renderItemRateCards(itemsInfo);
+    renderPLSummaryTable(itemsInfo, totalCostExTax, totalRevExTax, totalContract, mktSum, pmSum, swFixedSum, tpFixedSum, projActualRev, projActualGross, projActualNet);
+  } catch (e) { console.error('calcAll error:', e); }
+}
+
+function setItemMeta(iid, bt, itemCost, neededRev, neededContract, itemRate, actualRev, actualRate) {
+  var meta = document.getElementById('itemMeta_' + iid);
+  if (meta) meta.textContent = '目标毛利 ' + Math.round(bt.targetRate * 100) + '% · 收入税率 ' + Math.round(bt.inTax * 100) + '%';
+  var res = document.getElementById('itemResult_' + iid);
+  if (res) {
+    var html = '';
+    html += '<span class="ir-item">该子项总成本(除税)：<b>' + fmt(itemCost) + '</b></span>';
+    html += '<span class="ir-item">推荐收入(除税)：<b>' + fmt(Math.round(neededRev)) + '</b></span>';
+    // ★ v35: 优先显示实际净订单毛利率（如果已输入实际合同金额）
+    var displayRate = (actualRate !== null && actualRate >= 0) ? actualRate : itemRate;
+    var ratePass = displayRate >= bt.targetRate - 0.001;
+    html += '<span class="ir-item">子项净订单毛利率：<b>' + pct(displayRate) + '</b> ' + (ratePass ? '✓' : '✗') + '</span>';
+    var staff = getStaffDataForItem(iid);
+    if (staff.length > 0) {
+      var totalMM = 0, totalLabor = 0;
+      for (var i = 0; i < staff.length; i++) { totalMM += staff[i].mm; totalLabor += staff[i].cost * staff[i].mm; }
+      if (totalMM > 0) html += '<span class="ir-item avg-mm">平均人月单价：<b>' + fmt(Math.round(totalLabor / totalMM)) + '</b>（' + totalMM.toFixed(1) + '人月）</span>';
+    }
+    html += '<span class="ir-item rec">推荐合同(含税)：<b>' + fmt(Math.round(neededContract)) + '</b></span>';
+    // ★ v35: 如果已输入实际合同金额，显示"已填实际"；否则显示"应用推荐"
+    var actualEl = document.getElementById('itemActual_' + iid);
+    var hasActual = actualEl && actualEl.value > 0;
+    if (hasActual) {
+      html += '<span class="sb sb-pass" style="padding:3px 9px;font-size:11px;">已填实际</span>';
+    } else {
+      html += '<button class="apply-btn-sm" onclick="applyItemRec(' + iid + ')">应用推荐</button>';
+    }
+    res.innerHTML = html;
+  }
+  var ao = document.getElementById('itemActualOut_' + iid);
+  if (ao) {
+    if (actualRate !== null && !isNaN(actualRate)) {
+      var pass = actualRate >= bt.targetRate - 0.001;
+      var cls = pass ? 'sb-pass' : 'sb-fail';
+      var txt = actualRate < 0 ? '✗ 亏损/未达标' : (pass ? '✓ 达标 ≥' + Math.round(bt.targetRate * 100) + '%' : '✗ 差 ' + ((bt.targetRate - actualRate) * 100).toFixed(1) + '%');
+      ao.innerHTML = '<div class="frow ' + (pass ? 'green' : 'red') + '" style="margin:0;"><span class="fl">实际除税 ' + fmt(Math.round(actualRev)) + ' · 实际毛利率 ' + pct(actualRate) + '</span><span class="fv"><span class="sb ' + cls + '">' + txt + '</span></span></div>';
+    } else ao.innerHTML = '';
+  }
+}
+
+function applyItemRec(iid) {
+  iid = String(iid);
+  var neededContract = 0;
+  if (!window._calcAll || !window._calcAll.items) calcAll();
+  var items = window._calcAll ? window._calcAll.items : null;
+  if (items) for (var i = 0; i < items.length; i++) { if (String(items[i].iid) === iid) { neededContract = Math.round(items[i].neededContract); break; } }
+  var el = document.getElementById('itemActual_' + iid);
+  if (el) { el.value = neededContract || ''; el.classList.add('manual-edited'); }
+  calcAll();
+}
+
+// ============================================================
+// 子项净订单毛利率卡片渲染
+// ============================================================
+function renderItemRateCards(itemsInfo) {
+  var container = document.getElementById('itemRatesContainer');
+  if (!container || !itemsInfo || itemsInfo.length === 0) return;
+  function pctStr(val) { return isNaN(val) ? '0.0%' : (val * 100).toFixed(1) + '%'; }
+  function tColor(rate) { if (rate >= 0.55) return '#34d399'; if (rate >= 0.40) return '#6c8cff'; if (rate >= 0.25) return '#fbbf24'; return '#f87171'; }
+  var html = '';
+  for (var i = 0; i < itemsInfo.length; i++) {
+    var inf = itemsInfo[i]; var bt = inf.bt;
+    var itemCalcRate = inf.itemRate_i || inf.bt.targetRate;
+    var itemPass = itemCalcRate >= bt.targetRate - 0.001;
+    var diffPct = ((itemCalcRate - bt.targetRate) * 100).toFixed(1);
+    var rateColor = tColor(inf.bt.targetRate);
+    html += '<div class="item-rate-card ' + (itemPass ? 'irc-pass' : 'irc-fail') + '">'
+      + '<div class="irc-name">' + (inf.name || getTypeName(inf.typeKey))
+      + ' <span class="irc-badge" style="background:' + rateColor + '22;color:' + rateColor + ';">' + Math.round(bt.inTax * 100) + '%</span>'
+      + '</div>'
+      + '<div class="irc-row"><span>目标</span><span>' + pctStr(inf.bt.targetRate) + '</span></div>'
+      + '<div class="irc-row"><span>实际</span><span class="irc-val">' + pctStr(itemCalcRate) + '</span></div>'
+      + '<div class="irc-tag ' + (itemPass ? 'pass' : 'fail') + '">' + (itemPass ? '✓ 达标' : '✗ 差 ' + Math.abs(diffPct) + '%') + '</div></div>';
+  }
+  container.innerHTML = html;
+}
+
+// ============================================================
+// 项目损益总表渲染（v30: 接收 swFixedSum/tpFixedSum 参数）
+// ============================================================
+function renderPLSummaryTable(itemsInfo, totalCost, totalRev, totalContract, mktSum, pmSum, swFixedSum, tpFixedSum, projActualRev, projActualGross, projActualNet) {
+  var tbody = document.getElementById('plSummaryBody'); var noteBox = document.getElementById('plNoteBox');
+  if (!tbody) return;
+  var mktTax = (mktSum || 0) / 1.06; var pmTax = (pmSum || 0) / 1.06;
+  swFixedSum = swFixedSum || 0; tpFixedSum = tpFixedSum || 0;
+
+  if (itemsInfo.length === 0) { tbody.innerHTML = '<tr><td colspan="3" style="text-align:center;color:var(--text2);padding:20px;">暂无数据，请添加子项后重新计算</td></tr>'; return; }
+
+  // ★ v36: 如果已填实际合同金额，汇总表用实际值；否则用推荐值
+  // 口径与 Excel 一致：净订单(净值)=收入（不扣悦报销），净订单毛利润=收入-成本（不扣悦报销）
+  var useActual = (projActualRev > 0);
+  var projRev = useActual ? projActualRev : totalRev;
+  var projCost = totalCost;  // 不含悦报销
+  var projGross = useActual ? projActualGross : (projRev - projCost);
+  var netOrder = useActual ? projActualNet : projRev;  // 净订单(净值) = 收入，不扣悦报销
+  var fixedFees = mktSum + pmSum;  // 悦报销（含税）
+  var netProfit = projGross - fixedFees;  // 净订单净利润 = 毛利润 - 悦报销
+  var projNetMarginRate = (netOrder > 0) ? (projGross / netOrder) : 0;
+  var projMarginRate = (projRev > 0) ? (projGross / projRev) : 0;
+  var projNetProfitRate = (netOrder > 0) ? (netProfit / netOrder) : 0;
+  var projNetRateAll = (projRev > 0) ? (netProfit / projRev) : 0;
+
+  // 按成本分量分组：软件/服务 vs 第三方采购（含固定费用成本）
+  var swRev = 0, swCost = 0, swGross = 0;
+  var tpRev = 0, tpCost = 0, tpGross = 0;
+  for (var i = 0; i < itemsInfo.length; i++) {
+    var it = itemsInfo[i]; var rev = it.neededRev || 0;
+    var totalItemCost = it.itemCost || 0;
+    var itemSwCost = it.swCost || 0;  // 已含 swFixedShare
+    var itemTpCost = it.tpCost || 0;  // 已含 tpFixedShare
+    var swRevShare = (totalItemCost > 0) ? rev * (it.swCost - (it.swFixedShare||0)) / totalItemCost : 0; // 收入按原始SW比例分配
+    var tpRevShare = (totalItemCost > 0) ? rev * (it.tpCost - (it.tpFixedShare||0)) / totalItemCost : 0;
+    // 更精确的收入分配：按含固定费的SW/TP占比
+    var swRevShare2 = (itemSwCost + itemTpCost > 0) ? rev * (itemSwCost / (itemSwCost + itemTpCost)) : 0;
+    var tpRevShare2 = (itemSwCost + itemTpCost > 0) ? rev * (itemTpCost / (itemSwCost + itemTpCost)) : 0;
+    swGrossShare = swRevShare2 - itemSwCost; tpGrossShare = tpRevShare2 - itemTpCost;
+    swRev += swRevShare2; swCost += itemSwCost; swGross += swGrossShare;
+    tpRev += tpRevShare2; tpCost += itemTpCost; tpGross += tpGrossShare;
+  }
+
+  // ★ v36: 如果有实际合同金额，按推荐收入比例缩放 SW/TP 收入，保持结构一致
+  if (useActual && (swRev + tpRev) > 0 && projRev > 0) {
+    var scale = projRev / (swRev + tpRev);
+    swRev = swRev * scale; tpRev = tpRev * scale;
+    swGross = swRev - swCost; tpGross = tpRev - tpCost;
+  }
+
+  // 子项级悦报销分摊（v35: 修正口径，SW/TP 毛利也扣除悦报销）
+  var totalSwTpCost = swCost + tpCost;
+  var swMkt = (totalSwTpCost > 0 && swRev > 0) ? (swCost / totalSwTpCost) * mktTax : 0;
+  var swPm = (totalSwTpCost > 0 && swRev > 0) ? (swCost / totalSwTpCost) * pmTax : 0;
+  var tpMkt = (totalSwTpCost > 0 && tpRev > 0) ? (tpCost / totalSwTpCost) * mktTax : 0;
+  var tpPm = (totalSwTpCost > 0 && tpRev > 0) ? (tpCost / totalSwTpCost) * pmTax : 0;
+
+  var swMktTotal = swMkt + swPm; var tpMktTotal = tpMkt + tpPm;
+  // ★ v36: 口径与 Excel 一致，净订单毛利率 = 毛利润/净订单(净值)，均不扣悦报销
+  var swNetOrder = swRev; var tpNetOrder = tpRev;
+  var swGross = swRev - swCost; var tpGross = tpRev - tpCost;
+  var swNetRate = (swNetOrder > 0) ? (swGross / swNetOrder) : 0;
+  var tpNetRate = (tpNetOrder > 0) ? (tpGross / tpNetOrder) : 0;
+
+  function v(val) { return '<span class="pl-st-val ' + (val >= 0 ? 'pl-st-val-pos' : 'pl-st-val-neg') + '">' + fmt(Math.round(val)) + '</span>'; }
+  function vpct(val) { return '<span class="pl-st-pct ' + (val >= 0 ? 'pl-st-pct-good' : 'pl-st-pct-bad') + '">' + (val * 100).toFixed(2) + '%</span>'; }
+
+  var html = '';
+
+  html += '<tr><td colspan="3" class="pl-st-group">项目毛利</td></tr>';
+
+  html += '<tr class="pl-st-subhead"><td>软件/服务项目毛利</td><td></td><td></td></tr>';
+  html += '<tr><td class="pl-st-indent">软件/服务收入</td><td colspan="2" class="pl-st-val pl-st-val-pos">' + fmt(Math.round(swRev)) + '</td></tr>';
+  html += '<tr><td class="pl-st-indent">软件/服务成本（人工成本、委外成本、固定费用成本）</td><td colspan="2">' + fmt(Math.round(swCost)) + '</td></tr>';
+  if (swFixedSum > 0) html += '<tr><td class="pl-st-indent" style="padding-left:36px;color:var(--text2);font-size:12px;">　└ 其中：固定费用成本</td><td colspan="2">' + fmt(Math.round(swFixedSum)) + '</td></tr>';
+  html += '<tr><td class="pl-st-indent">软件/服务毛利</td><td colspan="2">' + v(swGross) + '</td></tr>';
+  html += '<tr><td class="pl-st-indent">软件/服务毛利率</td><td colspan="2">' + (swRev > 0 ? ((swGross/swRev)*100).toFixed(2) + '%' : '0.00%') + '</td></tr>';
+  html += '<tr><td class="pl-st-indent">软件/服务净订单毛利率</td><td colspan="2">' + vpct(swNetRate) + '</td></tr>';
+
+  html += '<tr class="pl-st-subhead"><td>第三方采购项目毛利</td><td></td><td></td></tr>';
+  html += '<tr><td class="pl-st-indent">第三方收入</td><td colspan="2" class="pl-st-val pl-st-val-pos">' + fmt(Math.round(tpRev)) + '</td></tr>';
+  html += '<tr><td class="pl-st-indent">第三方成本</td><td colspan="2">' + fmt(Math.round(tpCost)) + '</td></tr>';
+  if (tpFixedSum > 0) html += '<tr><td class="pl-st-indent" style="padding-left:36px;color:var(--text2);font-size:12px;">　└ 其中：固定费用成本</td><td colspan="2">' + fmt(Math.round(tpFixedSum)) + '</td></tr>';
+  html += '<tr><td class="pl-st-indent">第三方毛利</td><td colspan="2">' + v(tpGross) + '</td></tr>';
+  html += '<tr><td class="pl-st-indent">第三方毛利率</td><td colspan="2">' + (tpRev > 0 ? ((tpGross/tpRev)*100).toFixed(2) + '%' : '0.00%') + '</td></tr>';
+  html += '<tr><td class="pl-st-indent">第三方净订单毛利率</td><td colspan="2">' + vpct(tpNetRate) + '</td></tr>';
+
+  html += '<tr><td colspan="3" class="pl-st-group">项目损益汇总</td></tr>';
+  html += '<tr><td class="pl-st-indent">净订单（净值）</td><td colspan="2">' + v(netOrder) + '</td></tr>';
+  html += '<tr><td class="pl-st-indent">项目收入（不含税）</td><td colspan="2" class="pl-st-val pl-st-val-pos">' + fmt(Math.round(projRev)) + '</td></tr>';
+  html += '<tr><td class="pl-st-indent">项目成本及费用</td><td colspan="2">' + fmt(Math.round(swCost + tpCost + mktSum + pmSum)) + '</td></tr>';
+  html += '<tr><td class="pl-st-indent">固定费用合计（悦报销）</td><td colspan="2">' + fmt(Math.round(mktSum + pmSum)) + '</td></tr>';
+  html += '<tr><td class="pl-st-indent">项目固定费用成本合计</td><td colspan="2">' + fmt(Math.round(swFixedSum + tpFixedSum)) + '</td></tr>';
+  html += '<tr><td class="pl-st-indent">项目净订单毛利润</td><td colspan="2">' + v(projGross) + '</td></tr>';
+  html += '<tr><td class="pl-st-indent">项目净订单净利润</td><td colspan="2">' + v(netProfit) + '</td></tr>';
+
+  html += '<tr class="pl-st-highlight">';
+  html += '<td class="pl-st-indent">★ 项目净订单毛利率</td>';
+  html += '<td class="pl-st-pct ' + (projNetMarginRate >= 0 ? 'pl-st-pct-good' : 'pl-st-pct-bad') + '" style="font-size:18px;">' + (projNetMarginRate * 100).toFixed(2) + '%</td>';
+  html += '<td style="font-size:11px;color:var(--text2);">= 项目净订单毛利润 ÷ 净订单(净值)</td>';
+  html += '</tr>';
+
+  html += '<tr><td class="pl-st-indent">项目毛利率</td><td class="pl-st-pct">' + (projMarginRate * 100).toFixed(2) + '%</td><td style="font-size:11px;color:var(--text2);">= 项目净订单毛利润 ÷ 不含税收入</td></tr>';
+  html += '<tr><td class="pl-st-indent">项目净订单净利润率</td><td class="pl-st-pct">' + (projNetProfitRate * 100).toFixed(2) + '%</td><td></td></tr>';
+  html += '<tr><td class="pl-st-indent">项目净利率</td><td class="pl-st-pct">' + (projNetRateAll * 100).toFixed(2) + '%</td><td></td></tr>';
+
+  tbody.innerHTML = html;
+}
+
+// ============================================================
+// 费用上限检查 & 超限警告（v30: PM字段更新）
+// ============================================================
+function checkFeeLimits(netOrder) {
+  var limitEnt = netOrder * 0.037; var limitMkt4 = netOrder * 0.02; var limitPM = netOrder * 0.02;
+  var fmtLim = function(n) { return n > 0 ? '¥' + Math.round(n).toLocaleString() : '--'; };
+
+  var hEnt = document.getElementById('hint_entertainmentFee');
+  if (hEnt) { hEnt.innerHTML = '金额上限：净订单(净值)×<strong>3.7%</strong>（仅业务招待费单项）= <span class="lim-val">' + fmtLim(limitEnt) + '</span>'; if (fv('entertainmentFee') > limitEnt && limitEnt > 0) hEnt.className = 'limit-hint lim-over'; else hEnt.className = 'limit-hint'; }
+
+  var hGroup = document.getElementById('hint_marketGroup');
+  var mkt4Sum = fv('officeFee') + fv('trafficFee') + fv('welfareFee') + fv('travelFee');
+  // ★ v31: 与Excel一致，显示"四项费用小计"的上限提示
+  if (hGroup) { hGroup.innerHTML = '金额上限：净订单（净值）×<strong>2%</strong>（办公费＋市内交通费＋福利费＋差旅费）= <span class="lim-val">' + fmtLim(limitMkt4) + '</span> <span id="over_marketGroup_txt"></span>'; if (mkt4Sum > limitMkt4 && limitMkt4 > 0) { hGroup.className = 'limit-hint lim-over'; var oTxt = document.getElementById('over_marketGroup_txt'); if (oTxt) oTxt.textContent = ' ⚠️ 超限 ¥' + Math.round(mkt4Sum - limitMkt4).toLocaleString(); } else hGroup.className = 'limit-hint'; }
+  // ★ v31: 同步更新四项费用小计显示
+  setText('mkt4Subtotal', fmt(mkt4Sum));
+
+  // ★ v30: PM 字段更新为正确的6项
+  var hPM = document.getElementById('hint_pmTotal');
+  var pmFieldsV30 = ['pm_trafficFee','pm_rentFee','pm_dailyOfficeFee','pm_welfareFee','pm_travelFee','pm_vehicleFee'];
+  var pmTotal = 0; for (var pi = 0; pi < pmFieldsV30.length; pi++) pmTotal += fv(pmFieldsV30[pi]);
+  if (hPM) { hPM.innerHTML = '金额上限：净订单（净值）×<strong>2%</strong>（市内交通费＋租赁费＋日常办公费＋福利费＋差旅费＋车辆费用）= <span class="lim-val">' + fmtLim(limitPM) + '</span> <span id="over_pmTotal_txt"></span>'; if (pmTotal > limitPM && limitPM > 0) { hPM.className = 'limit-hint lim-over'; var oTxt2 = document.getElementById('over_pmTotal_txt'); if (oTxt2) oTxt2.textContent = ' ⚠️ 超限 ¥' + Math.round(pmTotal - limitPM).toLocaleString(); } else hPM.className = 'limit-hint'; }
+
+  // PM 市内交通单独上限提示
+  var hPMTr = document.getElementById('hint_pmTraffic');
+  if (hPMTr) { hPMTr.innerHTML = '金额上限：净订单（净值）×<strong>2%</strong>（市内交通费＋租赁费＋日常办公费＋福利费＋差旅费＋车辆费用）= <span class="lim-val">' + fmtLim(limitPM) + '</span>'; }
+
+  checkOneLimit('entertainmentFee', fv('entertainmentFee'), limitEnt);
+  var pmOver = pmTotal > limitPM && limitPM > 0;
+  for (var j = 0; j < pmFieldsV30.length; j++) { setOverStyle(pmFieldsV30[j], pmOver ? ('⚠️ PM合计超限 ¥' + Math.round(pmTotal - limitPM).toLocaleString()) : ''); }
+}
+
+function checkOneLimit(id, value, limit) {
+  if (limit > 0 && value > limit) setOverStyle(id, '⚠️ 超限 ¥' + Math.round(value - limit).toLocaleString());
+  else setOverStyle(id, '');
+}
+function setOverStyle(id, msg) {
+  var el = document.getElementById(id); var overEl = document.getElementById('over_' + id);
+  if (!el) return;
+  if (msg && msg !== '') { el.classList.add('input-over'); if (overEl) overEl.textContent = msg; }
+  else { el.classList.remove('input-over'); if (overEl) overEl.textContent = ''; }
+}
+
+// ============================================================
+// 折叠面板
+// ============================================================
+function toggleCollapse(el) { el.classList.toggle('collapsed'); var next = el.nextElementSibling; if (next) next.classList.toggle('collapsed'); }
+
+// ============================================================
+// 重置 & 示例填充
+// ============================================================
+function resetAll() { if (!confirm('确定清空所有数据？')) return; var container = document.getElementById('itemsContainer'); if (container) container.innerHTML = ''; itemIdCounter = 0; var inputs = document.querySelectorAll('input[type="number"],input[type="text"]'); for (var j = 0; j < inputs.length; j++) { inputs[j].value = ''; inputs[j].classList.remove('manual-edited'); } addItem('custom_dev'); calcAll(); }
+
+function autoFillDemo() {
+  resetAll();
+  setTimeout(function() {
+    addItem('custom_dev', {
+      name: '智慧交管平台定制开发',
+      staff: [{ roleKey:'dev_general', cost:18000, days:124 }, { roleKey:'bigdata', cost:23000, days:41 }, { roleKey:'algorithm', cost:30000, days:21 }],
+      outsource: 60000, hwSw: 80000, tpCS: 0, other: 5000, actual: ''
+    });
+    setVal('entertainmentFee', 15000); setVal('travelFee', 20000);
+    // v30: 示例数据中固定费用成本填一些值展示效果
+    setVal('swFixed_meetingFee', 3000); setVal('swFixed_agencyFee', 5000);
+    setVal('tpFixed_meetingFee', 2000); setVal('tpFixed_bidFee', 3000);
+    setVal('pm_rentFee', 8000); setVal('pm_vehicleFee', 5000);
+    calcAll();
+  }, 100);
+}
+
+// ============================================================
+// JSON 导出（v30: 新增固定费用成本字段）
+// ============================================================
+function collectData() {
+  var data = {};
+  var basicIds = ['contractNo','projectNo','contractName','productName','pmName','salesName',
+    'directorName','certSoftware',
+    'entertainmentFee','officeFee','trafficFee','welfareFee','travelFee',
+    'pm_trafficFee','pm_rentFee','pm_dailyOfficeFee','pm_welfareFee','pm_travelFee','pm_vehicleFee',
+    'swFixed_meetingFee','swFixed_agencyFee','swFixed_techFee','swFixed_bidFee','swFixed_evalFee',
+    'tpFixed_meetingFee','tpFixed_agencyFee','tpFixed_techFee','tpFixed_bidFee','tpFixed_evalFee',
+    'pay1Pct','pay2Pct','pay3Pct','pay4Pct'];
+  for (var i = 0; i < basicIds.length; i++) { var el = document.getElementById(basicIds[i]); if (el && el.value !== '') data[basicIds[i]] = parseFloat(el.value) || el.value; }
+  data.items = [];
+  var cards = document.querySelectorAll('.item-card');
+  for (var c = 0; c < cards.length; c++) {
+    var iid = cards[c].getAttribute('data-item-id'); if (!iid) continue;
+    var typeEl = document.getElementById('itemType_' + iid); if (!typeEl) continue;
+    data.items.push({ name: (document.getElementById('itemName_' + iid) || {}).value || '', type: typeEl.value,
+      staff: getStaffDataForItem(iid).map(function(s) { return { roleKey: s.roleKey, cost: s.cost, days: s.days }; }),
+      outsource: fv('itemOut_' + iid), hwSw: fv('itemHw_' + iid), tpCS: fv('itemCs_' + iid), other: fv('itemOther_' + iid), actual: fv('itemActual_' + iid) });
+  }
+  return data;
+}
+function exportJSON() { var json = JSON.stringify(collectData(), null, 2); var out = document.getElementById('jsonOutput'); if (out) out.textContent = json; var modal = document.getElementById('jsonModal'); if (modal) modal.classList.add('show'); }
+function copyJSON() { var out = document.getElementById('jsonOutput'); if (out && navigator.clipboard) navigator.clipboard.writeText(out.textContent).then(function() { alert('已复制！'); }); }
+function closeModal(id) { var m = document.getElementById(id); if (m) m.classList.remove('show'); }
+function showGuide() { var m = document.getElementById('guideModal'); if (m) m.classList.add('show'); }
+
+// ============================================================
+// 本地存储（v30: 版本号升级到5以区分旧格式）
+// ============================================================
+function saveState() {
+  try { var data = collectData(); data.__meta = { version: 5 }; localStorage.setItem('plBudget_v5', JSON.stringify(data)); alert('状态已保存！'); }
+  catch (e) { console.error('saveState error:', e); alert('保存失败: ' + e.message); }
+}
+function loadState() {
+  try {
+    var raw = localStorage.getItem('plBudget_v5') || localStorage.getItem('plBudget_v4');
+    if (!raw) { alert('没有保存的状态'); return; }
+    var data = JSON.parse(raw);
+    var inputs = document.querySelectorAll('input[type="number"],input[type="text"]');
+    for (var j = 0; j < inputs.length; j++) { inputs[j].value = ''; inputs[j].classList.remove('manual-edited'); }
+    var basicIds = ['contractNo','projectNo','contractName','productName','pmName','salesName',
+      'directorName','certSoftware',
+      'entertainmentFee','officeFee','trafficFee','welfareFee','travelFee',
+      'pm_trafficFee','pm_rentFee','pm_dailyOfficeFee','pm_welfareFee','pm_travelFee','pm_vehicleFee',
+      'swFixed_meetingFee','swFixed_agencyFee','swFixed_techFee','swFixed_bidFee','swFixed_evalFee',
+      'tpFixed_meetingFee','tpFixed_agencyFee','tpFixed_techFee','tpFixed_bidFee','tpFixed_evalFee',
+      'pay1Pct','pay2Pct','pay3Pct','pay4Pct'];
+    for (var b = 0; b < basicIds.length; b++) { if (data[basicIds[b]] != null) { var el = document.getElementById(basicIds[b]); if (el) el.value = data[basicIds[b]]; } }
+    var container = document.getElementById('itemsContainer'); if (container) container.innerHTML = ''; itemIdCounter = 0;
+    if (data.items && data.items.length) for (var i = 0; i < data.items.length; i++) addItem(data.items[i].type, data.items[i]);
+    else addItem('custom_dev');
+    calcAll(); alert('状态已加载！');
+  } catch (e) { console.error('loadState error:', e); alert('加载出错: ' + e.message); }
+}
+
+// ============================================================
+// 标准参考卡片（静态渲染）
+// ============================================================
+function renderStdGrid() {
+  var grid = document.getElementById('stdGrid'); if (!grid) return;
+  var html = '';
+  for (var k = 0; k < BIZ_KEYS.length; k++) { var key = BIZ_KEYS[k]; html += '<div class="std-card"><div class="sn">' + getTypeName(key) + '</div><div class="sr">≥' + Math.round(BIZ_TYPES[key].targetRate * 100) + '%</div></div>'; }
+  grid.innerHTML = html;
+}
+
+// ============================================================
+// ============================================================
+// ★ v32：生成 PL 表（纯原生 Excel 下载，零依赖）
+// ============================================================
+
+// ============================================================
+// ★ v32：生成 PL 表（纯原生 Excel 下载，零依赖，直接从 DOM 读数据）
+// ============================================================
+function generatePLTable() {
+  var cards = document.querySelectorAll('.item-card');
+  if (cards.length === 0) { alert('请先添加至少一个子项并填写数据'); return; }
+  var pn = gv('projectName').trim();
+  var now = new Date();
+  var dateStr = now.getFullYear() + '年' + (now.getMonth()+1) + '月' + now.getDate() + '日';
+  var fileName = pn ? pn + '项目预算损益表PL表' : dateStr + '项目预算损益表PL表';
+  var swRev = 0, swCost = 0, tpRev = 0, tpCost = 0;
+  var selfLaborCost = 0, outsourceCost = 0, hwPurchase = 0;
+  var itemRows = [];
+  for (var c = 0; c < cards.length; c++) {
+    var card = cards[c]; var iid = card.getAttribute('data-item-id');
+    if (!iid) continue;
+    var typeEl = document.getElementById('itemType_' + iid); if (!typeEl) continue;
+    var typeKey = typeEl.value;
+    var bt = BIZ_TYPES[typeKey] || BIZ_TYPES.custom_dev;
+    var itemName = (document.getElementById('itemName_' + iid) || {}).value || '';
+    var staff = getStaffDataForItem(iid); var laborCost = 0;
+    for (var s = 0; s < staff.length; s++) laborCost += staff[s].cost * staff[s].mm;
+    var outTax = fv('itemOut_' + iid) / 1.06;
+    var hwTax  = fv('itemHw_' + iid) / 1.13;
+    var csTax  = fv('itemCs_' + iid) / 1.09;
+    var other  = fv('itemOther_' + iid);
+    var itemCost = laborCost + outTax + hwTax + csTax + other;
+    var targetRate = bt.targetRate;
+    var R_i = itemCost / (1 - targetRate);
+    var contract_i = R_i * (1 + bt.inTax);
+    selfLaborCost += laborCost; outsourceCost += outTax; hwPurchase += hwTax;
+    var isTP = bt.name.indexOf('系统集成') >= 0 || bt.name.indexOf('服务集成') >= 0;
+    if (isTP) { tpRev += contract_i; tpCost += itemCost; }
+    else { swRev += contract_i; swCost += itemCost; }
+    itemRows.push({ name: itemName, type: bt.name, price: contract_i, cost: itemCost });
+  }
+  var swFixedFields = ['swFixed_meetingFee','swFixed_agencyFee','swFixed_techFee','swFixed_bidFee','swFixed_evalFee'];
+  var tpFixedFields = ['tpFixed_meetingFee','tpFixed_agencyFee','tpFixed_techFee','tpFixed_bidFee','tpFixed_evalFee'];
+  var fixedNames = ['合同会议费','代理费','技术联络费','中标服务费','项目评测费'];
+  var swFixedSum = 0, tpFixedSum = 0;
+  for (var fi = 0; fi < 5; fi++) { swFixedSum += fv(swFixedFields[fi]); tpFixedSum += fv(tpFixedFields[fi]); }
+  var mktSum = fv('entertainmentFee') + fv('officeFee') + fv('trafficFee') + fv('welfareFee') + fv('travelFee');
+  var pmTotal = fv('pm_trafficFee') + fv('pm_rentFee') + fv('pm_dailyFee') + fv('pm_welfareFee') + fv('pm_travelFee') + fv('pm_vehicleFee');
+  var totalRevVal = swRev + tpRev;
+  var totalCostVal = swCost + tpCost + mktSum + pmTotal;
+  var netOrderVal = (swRev + tpRev) - tpCost;
+  var projGrossVal = (swRev + tpRev) - (swCost + swFixedSum + tpCost + tpFixedSum);
+  var netProfitVal = projGrossVal - (mktSum + pmTotal);
+
+  // Build HTML table
+  var h = '<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40">';
+  h += '<head><meta charset="UTF-8"><!--[if gte mso 9]><xml><x:ExcelWorkbook><x:ExcelWorksheets></x:ExcelWorksheets></x:ExcelWorkbook></xml><![endif]--></head><body>';
+  h += '<table border="1" cellpadding="4" cellspacing="0" style="border-collapse:collapse;font-family:Microsoft YaHei,sans-serif;font-size:11pt;">';
+  h += '<tr><td colspan="11" style="text-align:center;font-size:16pt;font-weight:bold;background:#d9e1f2;">' + fileName.replace('.xlsx','') + '</td></tr>';
+  h += '<tr><td colspan="11" style="height:8px;"></td></tr>';
+  h += '<tr><td colspan="11" style="background:#b4c7e7;font-weight:bold;">项目基本信息</td></tr>';
+  h += '<tr><td style="width:8%;background:#d9e1f2;font-weight:bold;">项目名称</td><td style="width:22%;">' + esc(gv('projectName')) + '</td><td style="width:8%;background:#d9e1f2;font-weight:bold;">客户名称</td><td style="width:22%;">' + esc(gv('customerName')) + '</td><td style="width:8%;background:#d9e1f2;font-weight:bold;">报价有效期</td><td style="width:22%;">' + esc(gv('quoteValidity')) + '</td></tr>';
+  h += '<tr><td style="background:#d9e1f2;font-weight:bold;">售前人员</td><td>' + esc(gv('presaleName')) + '</td><td style="background:#d9e1f2;font-weight:bold;">销售经理</td><td>' + esc(gv('salesName')) + '</td><td style="background:#d9e1f2;font-weight:bold;">销售电话</td><td>' + esc(gv('salesPhone')) + '</td></tr>';
+  h += '<tr><td colspan="11" style="height:8px;"></td></tr>';
+  h += '<tr><td colspan="11" style="background:#b4c7e7;font-weight:bold;">项目收入</td></tr>';
+  h += '<tr><td></td><td style="font-weight:bold;">软件/服务项目</td><td></td><td style="font-weight:bold;">合同金额</td><td style="font-weight:bold;">除税金额</td><td style="font-weight:bold;">第三方采购项目TP</td><td style="font-weight:bold;">合同金额</td><td style="font-weight:bold;">税率</td><td style="font-weight:bold;">除税金额</td></tr>';
+  h += '<tr><td></td><td>认证软件SWC</td><td></td><td>' + fmtNum(swRev*0.6) + '</td><td>' + fmtNum(swRev*0.6/1.13) + '</td><td>软件</td><td>' + fmtNum(tpRev*0.3) + '</td><td>13%</td><td>' + fmtNum(tpRev*0.3/1.13) + '</td></tr>';
+  h += '<tr><td></td><td>非认证软件SWN</td><td></td><td>' + fmtNum(swRev*0.3) + '</td><td>' + fmtNum(swRev*0.3/1.13) + '</td><td>硬件</td><td>' + fmtNum(tpRev*0.5) + '</td><td>13%</td><td>' + fmtNum(tpRev*0.5/1.13) + '</td></tr>';
+  h += '<tr><td></td><td>服务SERVICE/维护MA</td><td></td><td>' + fmtNum(swRev*0.1) + '</td><td>' + fmtNum(swRev*0.1/1.09) + '</td><td>项目施工</td><td>' + fmtNum(tpRev*0.2) + '</td><td>9%</td><td>' + fmtNum(tpRev*0.2/1.09) + '</td></tr>';
+  h += '<tr><td></td><td style="font-weight:bold;">合同总额/净值合计</td><td></td><td style="font-weight:bold;">' + fmtNum(swRev) + '</td><td style="font-weight:bold;">' + fmtNum(swRev/1.12) + '</td><td style="font-weight:bold;">合同合计</td><td style="font-weight:bold;">' + fmtNum(tpRev) + '</td><td>-</td><td style="font-weight:bold;">' + fmtNum(tpRev/1.11) + '</td></tr>';
+  h += '<tr><td colspan="11" style="height:8px;"></td></tr>';
+  h += '<tr><td colspan="11" style="background:#b4c7e7;font-weight:bold;">项目人工/委外成本</td></tr>';
+  h += '<tr><td></td><td style="font-weight:bold;">软件/服务项目</td><td></td><td style="font-weight:bold;">人工成本</td><td style="font-weight:bold;">除税成本</td><td style="font-weight:bold;">第三方采购项目TP</td><td style="font-weight:bold;">采购成本</td><td style="font-weight:bold;">税率</td><td style="font-weight:bold;">除税成本</td></tr>';
+  h += '<tr><td></td><td>自有人均成本(元/月)</td><td></td><td>' + fmtNum(selfLaborCost) + '</td><td>' + fmtNum(selfLaborCost) + '</td><td>软件</td><td></td><td>13%</td><td>0</td></tr>';
+  h += '<tr><td></td><td>自有总人月(MM)</td><td></td><td>' + fmtNum(selfLaborCost) + '</td><td>' + fmtNum(selfLaborCost) + '</td><td>硬件</td><td></td><td>13%</td><td>0</td></tr>';
+  h += '<tr><td></td><td>自有人月总成本</td><td></td><td>' + fmtNum(selfLaborCost) + '</td><td>' + fmtNum(selfLaborCost) + '</td><td>项目施工</td><td></td><td>9%</td><td>0</td></tr>';
+  h += '<tr><td></td><td>项目及服务外包</td><td></td><td>' + fmtNum(outsourceCost) + '</td><td>' + fmtNum(outsourceCost) + '</td><td>/</td><td></td><td>-</td><td>-</td></tr>';
+  h += '<tr><td></td><td>软、硬件采购</td><td></td><td>' + fmtNum(hwPurchase) + '</td><td>' + fmtNum(hwPurchase) + '</td><td>/</td><td></td><td>-</td><td>-</td></tr>';
+  h += '<tr><td></td><td>其他成本</td><td></td><td>0</td><td>0</td><td>其他成本</td><td>0</td><td>0</td><td>0</td></tr>';
+  h += '<tr><td></td><td style="font-weight:bold;">项目成本合计</td><td></td><td style="font-weight:bold;">' + fmtNum(swCost) + '</td><td style="font-weight:bold;">' + fmtNum(swCost) + '</td><td style="font-weight:bold;">采购成本合计</td><td style="font-weight:bold;">' + fmtNum(tpCost) + '</td><td>-</td><td style="font-weight:bold;">' + fmtNum(tpCost) + '</td></tr>';
+  h += '<tr><td colspan="11" style="height:8px;"></td></tr>';
+  h += '<tr><td colspan="11" style="background:#b4c7e7;font-weight:bold;">项目固定费用成本</td></tr>';
+  h += '<tr><td></td><td style="font-weight:bold;">软件/服务项目</td><td style="font-weight:bold;">金额</td><td style="font-weight:bold;">除税金额</td><td></td><td style="font-weight:bold;">第三方采购项目</td><td style="font-weight:bold;">金额</td><td style="font-weight:bold;">除税金额</td></tr>';
+  for (var fi = 0; fi < 5; fi++) {
+    var sv = fv(swFixedFields[fi]); var tv = fv(tpFixedFields[fi]);
+    h += '<tr><td></td><td>' + fixedNames[fi] + '</td><td>' + fmtNum(sv) + '</td><td>' + fmtNum(sv/1.06) + '</td><td></td><td>' + fixedNames[fi] + '</td><td>' + fmtNum(tv) + '</td><td>' + fmtNum(tv/1.06) + '</td></tr>';
+  }
+  h += '<tr><td></td><td style="font-weight:bold;">软件/服务费用合计</td><td style="font-weight:bold;">' + fmtNum(swFixedSum) + '</td><td style="font-weight:bold;">' + fmtNum(swFixedSum/1.06) + '</td><td></td><td style="font-weight:bold;">第三方采购费用合计</td><td style="font-weight:bold;">' + fmtNum(tpFixedSum) + '</td><td style="font-weight:bold;">' + fmtNum(tpFixedSum/1.06) + '</td></tr>';
+  h += '<tr><td colspan="11" style="height:8px;"></td></tr>';
+  h += '<tr><td colspan="11" style="background:#b4c7e7;font-weight:bold;">项目费用（悦报销设置费用）</td></tr>';
+  h += '<tr><td></td><td style="font-weight:bold;">市场拓展管理费</td><td style="font-weight:bold;">金额</td><td style="font-weight:bold;">备注</td><td></td><td style="font-weight:bold;">项目管理费</td><td style="font-weight:bold;">金额</td><td style="font-weight:bold;">备注</td></tr>';
+  h += '<tr><td></td><td>业务招待费</td><td>' + fmtNum(fv('entertainmentFee')) + '</td><td>上限：净订单×3.7%</td><td></td><td>市内交通费</td><td>' + fmtNum(fv('pm_trafficFee')) + '</td><td>上限：净订单×2%</td></tr>';
+  h += '<tr><td></td><td>办公费（快递费、打印费）</td><td>' + fmtNum(fv('officeFee')) + '</td><td>上限：净订单×2%</td><td></td><td>租赁费（项目宿舍房租水电）</td><td>' + fmtNum(fv('pm_rentFee')) + '</td><td></td></tr>';
+  h += '<tr><td></td><td>市内交通费</td><td>' + fmtNum(fv('trafficFee')) + '</td><td></td><td></td><td>日常办公费（快递、打印等其他费用）</td><td>' + fmtNum(fv('pm_dailyFee')) + '</td><td></td></tr>';
+  h += '<tr><td></td><td>福利费</td><td>' + fmtNum(fv('welfareFee')) + '</td><td></td><td></td><td>福利费</td><td>' + fmtNum(fv('pm_welfareFee')) + '</td><td></td></tr>';
+  h += '<tr><td></td><td>差旅费</td><td>' + fmtNum(fv('travelFee')) + '</td><td></td><td></td><td>差旅费</td><td>' + fmtNum(fv('pm_travelFee')) + '</td><td></td></tr>';
+  h += '<tr><td></td><td>四项费用小计</td><td>' + fmtNum(fv('officeFee')+fv('trafficFee')+fv('welfareFee')+fv('travelFee')) + '</td><td></td><td></td><td>车辆费用（项目租赁用车相关费用）</td><td>' + fmtNum(fv('pm_vehicleFee')) + '</td><td></td></tr>';
+  h += '<tr><td></td><td>费用小计</td><td style="font-weight:bold;">' + fmtNum(mktSum) + '</td><td></td><td></td><td>费用小计</td><td style="font-weight:bold;">' + fmtNum(pmTotal) + '</td><td></td></tr>';
+  h += '<tr><td></td><td colspan="2" style="font-weight:bold;background:#fff2cc;">项目费用合计</td><td colspan="2" style="font-weight:bold;background:#fff2cc;">' + fmtNum(mktSum+pmTotal) + '</td><td></td><td colspan="2" style="font-weight:bold;background:#fff2cc;">' + fmtNum(mktSum+pmTotal) + '</td><td></td></tr>';
+  h += '<tr><td colspan="11" style="height:8px;"></td></tr>';
+  h += '<tr><td colspan="11" style="background:#b4c7e7;font-weight:bold;">项目毛利</td></tr>';
+  h += '<tr><td></td><td style="font-weight:bold;">软件/服务项目毛利</td><td></td><td></td><td></td><td style="font-weight:bold;">第三方采购项目毛利</td><td></td><td></td></tr>';
+  h += '<tr><td></td><td>软件/服务收入</td><td></td><td style="font-weight:bold;">' + fmtNum(swRev) + '</td><td></td><td>第三方收入</td><td></td><td style="font-weight:bold;">' + fmtNum(tpRev) + '</td></tr>';
+  h += '<tr><td></td><td>软件/服务成本（人工+委外+固定费用）</td><td></td><td style="font-weight:bold;">' + fmtNum(swCost+swFixedSum) + '</td><td></td><td>第三方成本</td><td></td><td style="font-weight:bold;">' + fmtNum(tpCost+tpFixedSum) + '</td></tr>';
+  h += '<tr><td></td><td>软件/服务毛利</td><td></td><td style="font-weight:bold;color:#006100;">' + fmtNum(swRev-swCost-swFixedSum) + '</td><td></td><td>第三方毛利</td><td></td><td style="font-weight:bold;color:#006100;">' + fmtNum(tpRev-tpCost-tpFixedSum) + '</td></tr>';
+  var swMarginRate = (swRev>0)?Math.round((swRev-swCost-swFixedSum)/swRev*10000)/100:0;
+  var tpMarginRate = (tpRev>0)?Math.round((tpRev-tpCost-tpFixedSum)/tpRev*10000)/100:0;
+  h += '<tr><td></td><td>软件/服务毛利率</td><td></td><td>' + swMarginRate + '%</td><td></td><td>第三方毛利率</td><td></td><td>' + tpMarginRate + '%</td></tr>';
+  var swNetRate = (netOrderVal>0)?Math.round((swRev-swCost-swFixedSum)/netOrderVal*10000)/100:0;
+  var tpNetRate = (netOrderVal>0)?Math.round((tpRev-tpCost-tpFixedSum)/netOrderVal*10000)/100:0;
+  h += '<tr><td></td><td>软件/服务净订单毛利率</td><td></td><td>' + swNetRate + '%</td><td></td><td>第三方净订单毛利率</td><td></td><td>' + tpNetRate + '%</td></tr>';
+  h += '<tr><td colspan="11" style="height:8px;"></td></tr>';
+  h += '<tr><td colspan="11" style="background:#b4c7e7;font-weight:bold;">项目净利</td></tr>';
+  h += '<tr><td></td><td style="font-weight:bold;">净订单（净值）</td><td></td><td style="font-weight:bold;font-size:12pt;">' + fmtNum(netOrderVal) + '</td><td></td><td colspan="3" style="font-size:9pt;color:#595959;">参考标准：自研软件≥60% | 定制化开发≥45% | 集成实施≥60% | 运行维护≥40% | 人力框架≥30% | 系统集成≥20% | 服务集成≥20%</td></tr>';
+  h += '<tr><td></td><td>项目收入</td><td></td><td style="font-weight:bold;">' + fmtNum(totalRevVal) + '</td><td></td><td colspan="4"></td></tr>';
+  h += '<tr><td></td><td>项目成本及费用</td><td></td><td style="font-weight:bold;">' + fmtNum(totalCostVal) + '</td><td></td><td colspan="4"></td></tr>';
+  h += '<tr><td></td><td>项目净订单毛利润</td><td></td><td style="font-weight:bold;color:#006100;">' + fmtNum(projGrossVal) + '</td><td></td><td colspan="4"></td></tr>';
+  h += '<tr><td></td><td>项目净订单净利润</td><td></td><td style="font-weight:bold;color:#006100;">' + fmtNum(netProfitVal) + '</td><td></td><td colspan="4"></td></tr>';
+  h += '</table></body></html>';
+  downloadFile(fileName + '.xls', h, 'application/vnd.ms-excel');
+}
+
+// ============================================================
+// ★ v32：生成正式报价单（纯原生 Excel 下载，直接从 DOM 读数据）
+// ============================================================
+function generateQuote() {
+  var cards = document.querySelectorAll('.item-card');
+  if (cards.length === 0) { alert('请先添加至少一个子项并填写数据'); return; }
+
+  // ★ v33：必填项校验
+  var pn = gv('projectName').trim();
+  var cust = gv('customerName').trim();
+  var sales = gv('salesName').trim();
+  var phone = gv('salesPhone').trim();
+  var validity = gv('quoteValidity').trim();
+  var missing = [];
+  if (!pn) missing.push('项目名称');
+  if (!cust) missing.push('客户名称');
+  if (!sales) missing.push('销售姓名');
+  if (!phone) missing.push('销售电话');
+  if (!validity) missing.push('报价有效期');
+  // 检查每个子项是否有名称
+  var unnamedItems = 0;
+  for (var cc = 0; cc < cards.length; cc++) {
+    var iid = cards[cc].getAttribute('data-item-id');
+    if (!iid) continue;
+    var nameVal = (document.getElementById('itemName_' + iid) || {}).value || '';
+    if (!nameVal.trim()) unnamedItems++;
+  }
+  if (unnamedItems > 0) missing.push('子项' + unnamedItems + '个缺少名称');
+  if (missing.length > 0) { alert('请先填写以下必填项：\n• ' + missing.join('\n• ')); return; }
+
+  var now = new Date();
+  var dateStr = (now.getMonth()+1) + '/' + now.getDate() + '/' + now.getFullYear();
+  var itemRows = [];
+  var grandTotal = 0;
+  for (var c = 0; c < cards.length; c++) {
+    var card = cards[c]; var iid = card.getAttribute('data-item-id');
+    if (!iid) continue;
+    var typeEl = document.getElementById('itemType_' + iid); if (!typeEl) continue;
+    var typeKey = typeEl.value;
+    var bt = BIZ_TYPES[typeKey] || BIZ_TYPES.custom_dev;
+    var itemName = (document.getElementById('itemName_' + iid) || {}).value || '';
+    var staff = getStaffDataForItem(iid); var laborCost = 0;
+    for (var s = 0; s < staff.length; s++) laborCost += staff[s].cost * staff[s].mm;
+    var outTax = fv('itemOut_' + iid) / 1.06;
+    var hwTax  = fv('itemHw_' + iid) / 1.13;
+    var csTax  = fv('itemCs_' + iid) / 1.09;
+    var other  = fv('itemOther_' + iid);
+    var itemCost = laborCost + outTax + hwTax + csTax + other;
+    var targetRate = bt.targetRate;
+    var R_i = itemCost / (1 - targetRate);
+    var contract_i = R_i * (1 + bt.inTax);
+    grandTotal += contract_i;
+    itemRows.push({ name: itemName, type: bt.name, price: contract_i });
+  }
+  var h = '<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40">';
+  h += '<head><meta charset="UTF-8"></head><body>';
+  h += '<table border="1" cellpadding="4" cellspacing="0" style="border-collapse:collapse;font-family:Microsoft YaHei,sans-serif;font-size:11pt;">';
+  h += '<tr><td colspan="7" style="text-align:center;font-size:16pt;font-weight:bold;background:#d9e1f2;">湖北天存产品报价单</td></tr>';
+  h += '<tr><td style="width:12%;">日期：</td><td style="width:25%;">' + dateStr + '</td><td style="width:63%;">价格说明：报价有效周期为 ' + esc(validity) + '</td></tr>';
+  h += '<tr><td>客户名称：</td><td>' + esc(cust) + '</td><td>销售经理：' + esc(sales) + '  电话：' + esc(phone) + '   Email:</td></tr>';
+  h += '<tr style="background:#b4c7e7;font-weight:bold;"><td style="width:6%;">序号</td><td style="width:18%;">产品名称</td><td style="width:30%;">产品描述</td><td style="width:8%;">数量</td><td style="width:14%;">单价</td><td style="width:14%;">单项总价</td><td style="width:10%;">备注</td></tr>';
+  for (var idx = 0; idx < itemRows.length; idx++) {
+    var r = itemRows[idx];
+    h += '<tr><td>' + (idx+1) + '</td><td>' + esc(r.name) + '</td><td>' + esc(r.type) + '</td><td>1</td><td>' + fmtNum(r.price) + '</td><td>' + fmtNum(r.price) + '</td><td></td></tr>';
+  }
+  h += '<tr style="background:#fff2cc;font-weight:bold;"><td>' + (itemRows.length+1) + '</td><td>总计</td><td></td><td>' + itemRows.length + '</td><td></td><td>' + fmtNum(grandTotal) + '</td><td></td></tr>';
+  h += '<tr><td colspan="7" style="font-size:9pt;color:#595959;white-space:pre-wrap;">备注：1.报价单具备唯一性，即针对准确客户、明确配置、明确集成商的项目，如项目要素发生重大变化，则报价单自动失效。2.对应客户经理对本报价单负责。3.报价单最终解释权归湖北天存信息技术有限公司所有。</td></tr>';
+  h += '</table></body></html>';
+  var qName = pn ? pn + '-正式报价单' : dateStr.replace(/\//g,'-') + '-正式报价单';
+  downloadFile(qName + '.xls', h, 'application/vnd.ms-excel');
+}
+
+function downloadFile(fileName, content, mimeType) {
+  var blob = new Blob(['\ufeff', content], { type: mimeType + ';charset=utf-8' });
+  var url = URL.createObjectURL(blob);
+  var a = document.createElement('a');
+  a.href = url;
+  a.download = fileName;
+  document.body.appendChild(a);
+  a.click();
+  setTimeout(function() { document.body.removeChild(a); URL.revokeObjectURL(url); }, 100);
+}
+
+// ★ v32 导出辅助函数
+function fmtNum(n) { return Math.round((n||0)*100)/100; }
+function esc(s) { if (!s) return ''; return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+
+// 初始化
+// ============================================================
+document.addEventListener('DOMContentLoaded', function() {
+  try {
+    renderStdGrid();
+    var raw = localStorage.getItem('plBudget_v5') || localStorage.getItem('plBudget_v4');
+    if (raw) { try { loadState(); } catch(e) { console.error('Auto load failed:', e); addItem('custom_dev'); } }
+    else { addItem('custom_dev'); calcAll(); }
+    refreshItemsToolbar();
+  } catch (e) { console.error('Init error:', e); if (document.querySelectorAll('.item-card').length === 0) addItem('custom_dev'); refreshItemsToolbar(); }
+});
+</script>
+</body>
+</html>
