@@ -1,0 +1,251 @@
+<view class="header">
+  <view class="title">📊 项目预算损益表 PL 系统</view>
+  <view class="header-btns">
+    <button class="btn-xs" bindtap="resetAll">🔄 重置</button>
+    <button class="btn-xs btn-xs-primary" bindtap="autoFillDemo">📝 填入示例</button>
+  </view>
+</view>
+
+<scroll-view scroll-y class="main">
+
+  <!-- 项目信息 -->
+  <view class="section section-full">
+    <view class="section-header"><text class="dot"></text>项目信息</view>
+    <view class="section-body">
+      <view class="form-grid cols-3">
+        <view class="fg"><text class="lbl">项目名称 <text class="req">*</text></text><input class="inp" placeholder="请输入项目名称" value="{{project.projectName}}" data-field="projectName" bindinput="onProjectInput"/></view>
+        <view class="fg"><text class="lbl">报价有效期 <text class="req">*</text></text><input class="inp" placeholder="如：30个工作日" value="{{project.quoteValidity}}" data-field="quoteValidity" bindinput="onProjectInput"/></view>
+        <view class="fg"><text class="lbl">客户名称 <text class="req">*</text></text><input class="inp" placeholder="客户/单位名称" value="{{project.customerName}}" data-field="customerName" bindinput="onProjectInput"/></view>
+        <view class="fg"><text class="lbl">销售姓名 <text class="req">*</text></text><input class="inp" placeholder="销售人员姓名" value="{{project.salesName}}" data-field="salesName" bindinput="onProjectInput"/></view>
+        <view class="fg"><text class="lbl">售前姓名</text><input class="inp" placeholder="售前人员姓名" value="{{project.presaleName}}" data-field="presaleName" bindinput="onProjectInput"/></view>
+        <view class="fg"><text class="lbl">销售电话 <text class="req">*</text></text><input class="inp" placeholder="销售联系方式" value="{{project.salesPhone}}" data-field="salesPhone" bindinput="onProjectInput"/></view>
+      </view>
+    </view>
+  </view>
+
+  <!-- 子项成本与预算 -->
+  <view class="section section-full">
+    <view class="section-header"><text class="dot"></text>子项成本与预算<text class="sub">各子项独立反算（不平均）</text></view>
+    <view class="section-body">
+      <view class="items-toolbar">
+        <text class="hint">单项目=1子项；多类型=加子项各自反算</text>
+        <text class="hint-count">（当前 {{itemCount}} / {{maxItems}} 子项）</text>
+        <button class="btn-xs btn-xs-primary" bindtap="addItem">＋ 添加子项</button>
+      </view>
+
+      <view class="item-card" wx:for="{{items}}" wx:key="id" wx:for-item="it">
+        <view class="item-head">
+          <input class="item-name" placeholder="子项名称（如：平台定制开发/外采实施部署）" value="{{it.name}}" data-iid="{{it.id}}" data-field="name" bindinput="onItemInput"/>
+          <picker class="item-type" mode="selector" range="{{bizNames}}" value="{{it.typeIndex}}" data-iid="{{it.id}}" bindchange="onItemTypeChange">
+            <view class="picker-view">{{it.display.typeName || bizNames[it.typeIndex]}}</view>
+          </picker>
+          <text class="item-meta">{{it.display.meta}}</text>
+          <button class="btn-del-row" data-iid="{{it.id}}" bindtap="removeItem">删除</button>
+        </view>
+        <view class="item-body">
+          <view class="staff-toolbar">
+            <text class="hint">👥 人工成本（填人天自动算人月）</text>
+            <button class="btn-xs btn-xs-primary" data-iid="{{it.id}}" bindtap="addStaff">＋ 添加人员</button>
+          </view>
+          <view class="staff-row head">
+            <text class="c-role">角色</text><text class="c-cost">月均成本</text><text class="c-days">人天</text><text class="c-mm">人月</text><text class="c-sub">小计</text><text class="c-del"></text>
+          </view>
+          <view class="staff-row" wx:for="{{it.staff}}" wx:key="rid" wx:for-item="st" wx:for-index="si">
+            <picker class="c-role" mode="selector" range="{{roleNames}}" value="{{st.roleIndex}}" data-iid="{{it.id}}" data-rid="{{st.rid}}" bindchange="onStaffRoleChange">
+              <view class="picker-view">{{roleNames[st.roleIndex]}}</view>
+            </picker>
+            <input class="c-cost inp" type="digit" value="{{st.cost}}" data-iid="{{it.id}}" data-rid="{{st.rid}}" data-field="cost" bindinput="onStaffInput"/>
+            <input class="c-days inp" type="digit" placeholder="人天" value="{{st.days}}" data-iid="{{it.id}}" data-rid="{{st.rid}}" data-field="days" bindinput="onStaffInput"/>
+            <text class="c-mm">{{st.days ? (st.days / 20.67).toFixed(2) : '0.00'}}</text>
+            <text class="c-sub">{{st.days ? (st.cost * st.days / 20.67).toFixed(0) : '0'}}</text>
+            <button class="c-del btn-del-row" data-iid="{{it.id}}" data-rid="{{st.rid}}" bindtap="removeStaffRow">×</button>
+          </view>
+
+          <view class="form-grid cols-4" style="margin-top:12rpx;">
+            <view class="fg"><text class="lbl">外包成本<text class="tax">6%</text></text><input class="inp" type="digit" placeholder="含税" value="{{it.outsource}}" data-iid="{{it.id}}" data-field="outsource" bindinput="onItemInput"/></view>
+            <view class="fg"><text class="lbl">软硬件采购<text class="tax">13%</text></text><input class="inp" type="digit" placeholder="含税" value="{{it.hwSw}}" data-iid="{{it.id}}" data-field="hwSw" bindinput="onItemInput"/></view>
+            <view class="fg"><text class="lbl">施工成本<text class="tax">9%</text></text><input class="inp" type="digit" placeholder="含税" value="{{it.tpCS}}" data-iid="{{it.id}}" data-field="tpCS" bindinput="onItemInput"/></view>
+            <view class="fg"><text class="lbl">其他成本<text class="tax">无税</text></text><input class="inp" type="digit" placeholder="元" value="{{it.other}}" data-iid="{{it.id}}" data-field="other" bindinput="onItemInput"/></view>
+          </view>
+
+          <view class="item-result">
+            <text class="ir">总成本(除税)：<text class="b">{{it.display.dispCost}}</text></text>
+            <text class="ir">推荐收入(除税)：<text class="b">{{it.display.dispRev}}</text></text>
+            <text class="ir">净订单毛利率：<text class="b">{{it.display.dispRate}} {{it.display.ratePass ? '✓' : '✗'}}</text></text>
+            <text class="ir rec" wx:if="{{it.display.avgMM}}">平均人月单价：<text class="b">{{it.display.avgMM}}</text></text>
+            <text class="ir rec">推荐合同(含税)：<text class="b">{{it.display.dispContract}}</text></text>
+          </view>
+
+          <view class="form-grid">
+            <view class="fg"><text class="lbl">实际合同金额(含税) — 留空则只看推荐</text><input class="inp" type="digit" placeholder="实际签单金额" value="{{it.actual}}" data-iid="{{it.id}}" data-field="actual" bindinput="onItemInput"/></view>
+            <view class="fg item-actual-out">
+              <block wx:if="{{it.display.hasActual}}">
+                <view class="frow {{it.display.actualPass ? 'green' : 'red'}}">
+                  <text class="fl">实际除税 {{it.display.actualDispRev}} · 实际毛利率 {{it.display.actualDispRate}}</text>
+                  <text class="fv"><text class="sb {{it.display.actualPass ? 'sb-pass' : 'sb-fail'}}">{{it.display.actualOver ? '✗ 亏损' : (it.display.actualPass ? '✓ 达标' : '✗ 未达标')}}</text></text>
+                </view>
+              </block>
+              <button wx:else class="apply-btn-sm" data-iid="{{it.id}}" bindtap="applyItemRec">应用推荐</button>
+            </view>
+          </view>
+        </view>
+      </view>
+    </view>
+  </view>
+
+  <!-- 项目固定费用成本 -->
+  <view class="section section-full">
+    <view class="section-header collapsible {{collapsed.fixed ? 'collapsed' : ''}}" data-key="fixed" bindtap="toggleCollapse"><text class="dot"></text>项目固定费用成本<text class="sub">（嵌入软件/服务成本 & 第三方成本）</text></view>
+    <view class="section-body" wx:if="{{!collapsed.fixed}}">
+      <view class="fixed-cost-split">
+        <view class="fixed-cost-group">
+          <view class="fixed-cost-group-title">📦 软件/服务项目</view>
+          <view class="form-grid">
+            <view class="fg"><text class="lbl">合同会议费</text><input class="inp" type="digit" placeholder="元" value="{{swFixed.meetingFee}}" data-group="swFixed" data-field="meetingFee" bindinput="onGroupInput"/></view>
+            <view class="fg"><text class="lbl">代理费</text><input class="inp" type="digit" placeholder="元" value="{{swFixed.agencyFee}}" data-group="swFixed" data-field="agencyFee" bindinput="onGroupInput"/></view>
+            <view class="fg"><text class="lbl">技术联络费</text><input class="inp" type="digit" placeholder="元" value="{{swFixed.techFee}}" data-group="swFixed" data-field="techFee" bindinput="onGroupInput"/></view>
+            <view class="fg"><text class="lbl">中标服务费</text><input class="inp" type="digit" placeholder="元" value="{{swFixed.bidFee}}" data-group="swFixed" data-field="bidFee" bindinput="onGroupInput"/></view>
+            <view class="fg"><text class="lbl">项目评测费</text><input class="inp" type="digit" placeholder="元" value="{{swFixed.evalFee}}" data-group="swFixed" data-field="evalFee" bindinput="onGroupInput"/></view>
+          </view>
+          <view class="frow orange"><text class="fl">软件/服务费用合计</text><text class="fv">{{result.fixed.swFixedSum}}</text></view>
+        </view>
+        <view class="fixed-cost-group">
+          <view class="fixed-cost-group-title">📦 第三方采购项目</view>
+          <view class="form-grid">
+            <view class="fg"><text class="lbl">合同会议费</text><input class="inp" type="digit" placeholder="元" value="{{tpFixed.meetingFee}}" data-group="tpFixed" data-field="meetingFee" bindinput="onGroupInput"/></view>
+            <view class="fg"><text class="lbl">代理费</text><input class="inp" type="digit" placeholder="元" value="{{tpFixed.agencyFee}}" data-group="tpFixed" data-field="agencyFee" bindinput="onGroupInput"/></view>
+            <view class="fg"><text class="lbl">技术联络费</text><input class="inp" type="digit" placeholder="元" value="{{tpFixed.techFee}}" data-group="tpFixed" data-field="techFee" bindinput="onGroupInput"/></view>
+            <view class="fg"><text class="lbl">中标服务费</text><input class="inp" type="digit" placeholder="元" value="{{tpFixed.bidFee}}" data-group="tpFixed" data-field="bidFee" bindinput="onGroupInput"/></view>
+            <view class="fg"><text class="lbl">项目评测费</text><input class="inp" type="digit" placeholder="元" value="{{tpFixed.evalFee}}" data-group="tpFixed" data-field="evalFee" bindinput="onGroupInput"/></view>
+          </view>
+          <view class="frow orange"><text class="fl">第三方采购费用合计</text><text class="fv">{{result.fixed.tpFixedSum}}</text></view>
+        </view>
+      </view>
+    </view>
+  </view>
+
+  <!-- 市场拓展管理费 -->
+  <view class="section">
+    <view class="section-header collapsible {{collapsed.market ? 'collapsed' : ''}}" data-key="market" bindtap="toggleCollapse"><text class="dot"></text>市场拓展管理费<text class="sub">（悦报销）</text></view>
+    <view class="section-body" wx:if="{{!collapsed.market}}">
+      <view class="fg"><text class="lbl">业务招待费</text><input class="inp {{result.feeLimits.entertainment.over ? 'input-over' : ''}}" type="digit" placeholder="元" value="{{market.entertainmentFee}}" data-group="market" data-field="entertainmentFee" bindinput="onGroupInput"/></view>
+      <view class="limit-hint {{result.feeLimits.entertainment.over ? 'lim-over' : ''}}">金额上限：净订单(净值)×3.7%（仅业务招待费单项）= <text class="lim-val">{{result.feeLimits.entertainment.limit}}</text></view>
+      <view class="form-grid" style="margin-top:12rpx;">
+        <view class="fg"><text class="lbl">办公费</text><input class="inp" type="digit" placeholder="元" value="{{market.officeFee}}" data-group="market" data-field="officeFee" bindinput="onGroupInput"/></view>
+        <view class="fg"><text class="lbl">市内交通费</text><input class="inp" type="digit" placeholder="元" value="{{market.trafficFee}}" data-group="market" data-field="trafficFee" bindinput="onGroupInput"/></view>
+        <view class="fg"><text class="lbl">福利费</text><input class="inp" type="digit" placeholder="元" value="{{market.welfareFee}}" data-group="market" data-field="welfareFee" bindinput="onGroupInput"/></view>
+        <view class="fg"><text class="lbl">差旅费</text><input class="inp" type="digit" placeholder="元" value="{{market.travelFee}}" data-group="market" data-field="travelFee" bindinput="onGroupInput"/></view>
+      </view>
+      <view class="frow"><text class="fl">四项费用小计</text><text class="fv primary-text">{{result.fixed.mkt4Sum}}</text></view>
+      <view class="limit-hint {{result.feeLimits.market.over ? 'lim-over' : ''}}">金额上限：净订单(净值)×2%（办公+交通+福利+差旅）= <text class="lim-val">{{result.feeLimits.market.limit}}</text><text wx:if="{{result.feeLimits.market.over}}"> ⚠️ 超限 ¥{{result.feeLimits.market.overAmt}}</text></view>
+      <view class="frow"><text class="fl">市场拓展管理费 — 费用小计</text><text class="fv orange-text">{{result.fixed.mktSum}}</text></view>
+    </view>
+  </view>
+
+  <!-- 项目管理费 -->
+  <view class="section">
+    <view class="section-header collapsible {{collapsed.pm ? 'collapsed' : ''}}" data-key="pm" bindtap="toggleCollapse"><text class="dot"></text>项目管理费<text class="sub">（悦报销）</text></view>
+    <view class="section-body" wx:if="{{!collapsed.pm}}">
+      <view class="form-grid">
+        <view class="fg"><text class="lbl">市内交通费</text><input class="inp" type="digit" placeholder="元" value="{{pm.trafficFee}}" data-group="pm" data-field="trafficFee" bindinput="onGroupInput"/></view>
+        <view class="fg"><text class="lbl">租赁费</text><input class="inp" type="digit" placeholder="元" value="{{pm.rentFee}}" data-group="pm" data-field="rentFee" bindinput="onGroupInput"/></view>
+        <view class="fg"><text class="lbl">日常办公费</text><input class="inp" type="digit" placeholder="元" value="{{pm.dailyOfficeFee}}" data-group="pm" data-field="dailyOfficeFee" bindinput="onGroupInput"/></view>
+        <view class="fg"><text class="lbl">福利费</text><input class="inp" type="digit" placeholder="元" value="{{pm.welfareFee}}" data-group="pm" data-field="welfareFee" bindinput="onGroupInput"/></view>
+        <view class="fg"><text class="lbl">差旅费</text><input class="inp" type="digit" placeholder="元" value="{{pm.travelFee}}" data-group="pm" data-field="travelFee" bindinput="onGroupInput"/></view>
+        <view class="fg"><text class="lbl">车辆费用</text><input class="inp" type="digit" placeholder="元" value="{{pm.vehicleFee}}" data-group="pm" data-field="vehicleFee" bindinput="onGroupInput"/></view>
+      </view>
+      <view class="limit-hint {{result.feeLimits.pm.over ? 'lim-over' : ''}}">金额上限：净订单(净值)×2%（市内交通+租赁+日常办公+福利+差旅+车辆）= <text class="lim-val">{{result.feeLimits.pm.limit}}</text><text wx:if="{{result.feeLimits.pm.over}}"> ⚠️ 超限 ¥{{result.feeLimits.pm.overAmt}}</text></view>
+      <view class="frow"><text class="fl">项目管理费 — 费用小计</text><text class="fv orange-text">{{result.fixed.pmSum}}</text></view>
+    </view>
+  </view>
+
+  <!-- 项目费用合计 -->
+  <view class="section section-full">
+    <view class="section-header"><text class="dot"></text>项目费用合计（悦报销设置费用）</view>
+    <view class="section-body">
+      <view class="frow hl"><text class="fl">市场拓展管理费</text><text class="fv">{{result.fixed.mktSum}}</text></view>
+      <view class="frow hl"><text class="fl">项目管理费</text><text class="fv">{{result.fixed.pmSum}}</text></view>
+      <view class="frow orange big"><text class="fl"><text class="b">项目费用合计</text></text><text class="fv big">{{result.fixed.totalExpense}}</text></view>
+    </view>
+  </view>
+
+  <!-- 收款信息 -->
+  <view class="section section-full">
+    <view class="section-header collapsible {{collapsed.payment ? 'collapsed' : ''}}" data-key="payment" bindtap="toggleCollapse"><text class="dot"></text>收款信息</view>
+    <view class="section-body" wx:if="{{!collapsed.payment}}">
+      <view class="form-grid cols-4">
+        <view class="fg"><text class="lbl">阶段一收款比例(%)</text><input class="inp" type="digit" placeholder="%" value="{{pay.pay1Pct}}" data-group="pay" data-field="pay1Pct" bindinput="onGroupInput"/></view>
+        <view class="fg"><text class="lbl">阶段二收款比例(%)</text><input class="inp" type="digit" placeholder="%" value="{{pay.pay2Pct}}" data-group="pay" data-field="pay2Pct" bindinput="onGroupInput"/></view>
+        <view class="fg"><text class="lbl">阶段三收款比例(%)</text><input class="inp" type="digit" placeholder="%" value="{{pay.pay3Pct}}" data-group="pay" data-field="pay3Pct" bindinput="onGroupInput"/></view>
+        <view class="fg"><text class="lbl">阶段四收款比例(%)</text><input class="inp" type="digit" placeholder="%" value="{{pay.pay4Pct}}" data-group="pay" data-field="pay4Pct" bindinput="onGroupInput"/></view>
+      </view>
+    </view>
+  </view>
+
+  <!-- 项目总览 -->
+  <view class="section section-full" wx:if="{{result}}">
+    <view class="section-header"><text class="dot"></text>📈 项目总览 — 采购 / 预算 / 毛利 匹配</view>
+    <view class="section-body">
+      <view class="results">
+        <view class="rcard neutral"><view class="rl">总采购成本(除税)</view><view class="rv">{{result.overview.costExTax}}</view><view class="rs">所有子项成本合计</view></view>
+        <view class="rcard neutral"><view class="rl">总推荐收入(除税)</view><view class="rv">{{result.overview.revExTax}}</view><view class="rs">各子项反算合计</view></view>
+        <view class="rcard contract-highlight"><view class="rl">总推荐预算(含税合同)</view><view class="rv">{{result.overview.contract}}</view><view class="rs">对外签单总额</view></view>
+        <view class="rcard {{result.overview.pass ? 'positive' : 'negative'}}"><view class="rl">整体净订单毛利率 ★</view><view class="rv">{{result.overview.overallRatePct}}</view><view class="rs">{{result.overview.pass ? '✓ 达标 ≥'+result.overview.overallTargetPct : '✗ 差 '+result.overview.diffPct+'%'}}</view></view>
+      </view>
+      <view class="section-header" style="font-size:24rpx;color:var(--text2);margin-top:24rpx;padding:0 14rpx 6rpx;">各子项净订单毛利率</view>
+      <view class="rate-cards">
+        <view class="item-rate-card {{item.pass ? 'irc-pass' : 'irc-fail'}}" wx:for="{{result.itemRates}}" wx:key="name">
+          <view class="irc-name">{{item.name}} <text class="irc-badge" style="background:{{item.rateColor}}22;color:{{item.rateColor}};">{{item.inTaxPct}}</text></view>
+          <view class="irc-row"><text>目标</text><text>{{item.targetPct}}</text></view>
+          <view class="irc-row"><text>实际</text><text class="irc-val">{{item.actualPct}}</text></view>
+          <view class="irc-tag {{item.pass ? 'pass' : 'fail'}}">{{item.pass ? '✓ 达标' : '✗ 差 '+item.diffAbs+'%'}}</view>
+        </view>
+      </view>
+    </view>
+  </view>
+
+  <!-- 项目净订单毛利率标准 -->
+  <view class="section section-full">
+    <view class="section-header"><text class="dot"></text>项目净订单毛利率标准（参考）</view>
+    <view class="section-body">
+      <view class="std-grid">
+        <view class="std-card"><view class="sn">自研软件产品销售</view><view class="sr">≥60%</view></view>
+        <view class="std-card"><view class="sn">软件定制化开发</view><view class="sr">≥45%</view></view>
+        <view class="std-card"><view class="sn">集成实施(外采硬件+部署)</view><view class="sr">≥60%</view></view>
+        <view class="std-card"><view class="sn">运行维护</view><view class="sr">≥40%</view></view>
+        <view class="std-card"><view class="sn">人力框架</view><view class="sr">≥30%</view></view>
+        <view class="std-card"><view class="sn">系统集成(软硬件+交付)</view><view class="sr">≥20%</view></view>
+        <view class="std-card"><view class="sn">服务集成(服务+交付)</view><view class="sr">≥20%</view></view>
+      </view>
+    </view>
+  </view>
+
+  <!-- 项目损益总表 -->
+  <view class="section section-full" wx:if="{{result}}">
+    <view class="section-header"><text class="dot"></text>项目损益总表</view>
+    <view class="section-body">
+      <view class="pl-table">
+        <view wx:for="{{result.plSummary}}" wx:key="label" wx:for-index="idx" class="pl-row {{item.isGroup ? 'pl-group' : ''}} {{item.isSubhead ? 'pl-subhead' : ''}} {{item.isHighlight ? 'pl-highlight' : ''}}">
+          <text class="pl-label {{item.indent ? 'pl-indent' : ''}}">{{item.label}}</text>
+          <text wx:if="{{item.val !== ''}}" class="pl-val {{item.valCls}}">{{item.val}}</text>
+          <text wx:else class="pl-val"></text>
+          <text class="pl-note">{{item.note}}</text>
+        </view>
+      </view>
+      <view class="pl-note-box">
+        <text class="b">备注（低于标准净订单毛利说明）：</text>
+        自研软件产品销售≥60%；软件定制化开发≥45%；集成实施(外采硬件+部署)≥60%；运维维保≥40%；人力框架≥30%；系统集成(外采软硬件+交付)≥20%；服务集成(外采服务+交付)≥20%。
+        <text class="b">公式：</text>项目净订单毛利率 = 项目净订单毛利润 / 净订单（净值）；项目毛利率 = 项目净订单毛利润 / 不含税收入
+      </view>
+    </view>
+  </view>
+
+  <!-- 操作区 -->
+  <view class="action-bar">
+    <button class="btn btn-primary" bindtap="recalc">⚡ 重新计算</button>
+    <button class="btn btn-secondary" bindtap="exportPL">📊 生成PL表</button>
+    <button class="btn btn-secondary" bindtap="exportQuote">💰 生成正式报价单</button>
+    <button class="btn btn-secondary" bindtap="exportJSON">📋 导出JSON</button>
+  </view>
+
+</scroll-view>

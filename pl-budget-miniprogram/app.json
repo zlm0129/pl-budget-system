@@ -1,0 +1,13 @@
+{
+  "pages": [
+    "pages/index/index"
+  ],
+  "window": {
+    "navigationBarTitleText": "项目预算损益表 PL 系统",
+    "navigationBarBackgroundColor": "#0f1117",
+    "navigationBarTextStyle": "white",
+    "backgroundColor": "#0f1117"
+  },
+  "style": "v2",
+  "sitemapLocation": "sitemap.json"
+}
