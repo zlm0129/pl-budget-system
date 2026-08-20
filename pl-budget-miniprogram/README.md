@@ -6,7 +6,7 @@
 
 打开微信开发者工具，选择「导入项目」，目录指向本文件夹 `pl-budget-miniprogram`。
 
-当前 `project.config.json` 里用的是测试 AppID `touristappid`，可以直接用游客模式预览。要真机调试或正式发布，需替换为你自己的小程序 AppID（在微信公众平台后台获取）。
+`project.config.json` 已填入真实 AppID `wx0b722c4cb3164e5a`。导入开发者工具后可直接编译、上传，并在公众平台后台设为体验版供内部使用。
 
 导入后点「编译」，即可在模拟器里看到完整的损益测算界面。
 
@@ -52,7 +52,7 @@
 ```
 pl-budget-miniprogram/
 ├── app.js / app.json / app.wxss      全局入口、配置、暗色主题
-├── project.config.json               项目配置（AppID 需替换）
+├── project.config.json               项目配置（AppID: wx0b722c4cb3164e5a）
 ├── sitemap.json
 ├── pages/index/                      单页面：wxml 结构 + wxss 样式 + js 逻辑 + json 配置
 └── utils/

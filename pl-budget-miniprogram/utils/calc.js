@@ -143,6 +143,16 @@ function calc(state) {
     const hasActual = inf.actual > 0;
     const actualPass = inf.actualRate !== null ? inf.actualRate >= bt.targetRate - 0.001 : false;
 
+    // ---- 每条人员的含毛利+税率的推荐价 ----
+    const staffPerStaffRec = [];
+    if (inf.itemCost > 0 && inf.neededContract > 0) {
+      for (let s = 0; s < staff.length; s++) {
+        const sc = num(staff[s].cost) * (num(staff[s].days) / DAYS_PER_MONTH); // 该人员小计
+        // 分摊：人员小计 / 子项总成本 × 子项推荐合同
+        staffPerStaffRec.push(Math.round(sc / inf.itemCost * inf.neededContract));
+      }
+    }
+
     return {
       id: inf.id, name: inf.name, typeName: getTypeName(inf.typeKey),
       meta: '目标毛利 ' + Math.round(bt.targetRate * 100) + '% · 收入税率 ' + Math.round(bt.inTax * 100) + '%',
@@ -153,7 +163,8 @@ function calc(state) {
       hasActual,
       actualDispRate: inf.actualRate !== null && !isNaN(inf.actualRate) ? pct(inf.actualRate) : '',
       actualDispRev: fmt(Math.round(inf.actualRev)),
-      actualPass, actualOver: inf.actualRate < 0
+      actualPass, actualOver: inf.actualRate < 0,
+      staffPerStaffRec // 每条人员的含利推荐价
     };
   });
 

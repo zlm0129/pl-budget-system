@@ -48,7 +48,7 @@
             <button class="btn-xs btn-xs-primary" data-iid="{{it.id}}" bindtap="addStaff">＋ 添加人员</button>
           </view>
           <view class="staff-row head">
-            <text class="c-role">角色</text><text class="c-cost">月均成本</text><text class="c-days">人天</text><text class="c-mm">人月</text><text class="c-sub">小计</text><text class="c-del"></text>
+            <text class="c-role">角色</text><text class="c-cost">月均成本</text><text class="c-days">人天</text><text class="c-mm">人月</text><text class="c-sub">小计</text><text class="c-rec">含利推荐</text><text class="c-del"></text>
           </view>
           <view class="staff-row" wx:for="{{it.staff}}" wx:key="rid" wx:for-item="st" wx:for-index="si">
             <picker class="c-role" mode="selector" range="{{roleNames}}" value="{{st.roleIndex}}" data-iid="{{it.id}}" data-rid="{{st.rid}}" bindchange="onStaffRoleChange">
@@ -58,6 +58,7 @@
             <input class="c-days inp" type="digit" placeholder="人天" value="{{st.days}}" data-iid="{{it.id}}" data-rid="{{st.rid}}" data-field="days" bindinput="onStaffInput"/>
             <text class="c-mm">{{st.days ? (st.days / 20.67).toFixed(2) : '0.00'}}</text>
             <text class="c-sub">{{st.days ? (st.cost * st.days / 20.67).toFixed(0) : '0'}}</text>
+            <text class="c-rec">{{it.display.staffPerStaffRec && it.display.staffPerStaffRec[si] ? '¥' + it.display.staffPerStaffRec[si].toLocaleString('zh-CN') : '—'}}</text>
             <button class="c-del btn-del-row" data-iid="{{it.id}}" data-rid="{{st.rid}}" bindtap="removeStaffRow">×</button>
           </view>
 
