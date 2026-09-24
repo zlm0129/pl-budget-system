@@ -41,7 +41,7 @@
   .btn:hover{border-color:#4f8cff88;color:#fff}
   .btn.primary{border-color:#2fbf7166;background:#14241b;color:#6fcf9a}
   .btn.primary:hover{border-color:#4ede92aa}
-  #roles{display:grid;grid-template-columns:repeat(auto-fill,minmax(228px,1fr));gap:10px}
+  #roles{display:grid;grid-template-columns:repeat(auto-fill,minmax(302px,1fr));gap:10px}
   .role{display:flex;align-items:center;gap:6px;border:1px solid #262b36;border-radius:10px;
         background:#0e1118;padding:7px 9px}
   .role.fixed,.role.mine{border-color:#2fbf7140;background:#131f19}
@@ -56,8 +56,12 @@
   .role .rn:hover{border-bottom-color:#2c3342}
   .role .rn:focus{border-bottom-color:#4f8cff;color:#e6e9ef}
   .role.fixed .rn{color:#6fcf9a;cursor:default}
-  .role .rp{width:74px;text-align:right;font-variant-numeric:tabular-nums;border-bottom:1px solid #2c3342}
+  .role .rp{width:64px;text-align:right;font-variant-numeric:tabular-nums;border-bottom:1px solid #2c3342}
   .role .rp:focus{border-bottom-color:#4f8cff}
+  .role .rd{width:52px;text-align:right;font-variant-numeric:tabular-nums;border-bottom:1px solid #2c3342}
+  .role .rd:focus{border-bottom-color:#4f8cff}
+  .role .rd:disabled{opacity:.35}
+  .role .sl{color:#3a4152;font-size:12px}
   .role .u{color:#6b7687;font-size:11px}
   .role .del{border:0;background:transparent;color:#5d6779;font-size:16px;cursor:pointer;
              padding:0 2px;line-height:1}
@@ -126,7 +130,7 @@
     <div class="pfield"><label>n1（报价≥基准价）</label><div class="w"><input id="n1" value="1" inputmode="decimal"></div></div>
     <div class="pfield"><label>n2（报价&lt;基准价）</label><div class="w"><input id="n2" value="0.5" inputmode="decimal"></div></div>
     <div class="pfield"><label>价格评分权重</label><div class="w"><input id="wt" value="35" inputmode="decimal"><span class="u">%</span></div></div>
-    <div class="note">最高限价、C 为项目级灵活输入；W1/W2/n1/n2/权重已按采购文件固化，一般无需改动。折扣率 = 报价 ÷ 最高限价。</div>
+    <div class="note">最高限价、C 为项目级灵活输入；W1/W2/n1/n2/权重已按采购文件固化。角色卡中金额与折扣率双向互算：填金额自动出折扣率，填折扣率自动出金额（依据最高限价）。</div>
   </section>
 
   <section class="panel">
@@ -180,6 +184,9 @@ function makeRow(r){
              : '<button class="side' + (mine ? ' on' : '') + '">' + (mine ? '伙伴' : '对手') + '</button>') +
     '<input class="rp" inputmode="decimal" value="' + (r.price!=null?r.price:'') + '">' +
     '<span class="u">万</span>' +
+    '<span class="sl">/</span>' +
+    '<input class="rd" inputmode="decimal" placeholder="折扣率" value="' + (r.rd!=null?r.rd:'') + '">' +
+    '<span class="u">%</span>' +
     (r.fixed ? '' : '<button class="del" title="删除">×</button>');
   return el;
 }
@@ -368,6 +375,7 @@ function save(){
     var roles = [];
     document.querySelectorAll('#roles .role').forEach(function(el){
       roles.push({ name: el.querySelector('.rn').value, price: el.querySelector('.rp').value,
+                   rd: el.querySelector('.rd').value,
                    fixed: el.classList.contains('fixed'),
                    side: el.classList.contains('mine') ? 'mine' : 'opp' });
     });
@@ -393,9 +401,22 @@ function load(){
   }
 }
 
+/* ---------- 金额 ↔ 折扣率 双向互算 ---------- */
+function syncRowRd(el){
+  var lp = parseNum(document.getElementById('lp').value);
+  var rp = el.querySelector('.rp'), rd = el.querySelector('.rd');
+  if (!lp){ rd.value = ''; rd.disabled = true; rd.placeholder = '—'; return; }
+  rd.disabled = false; rd.placeholder = '折扣率';
+  var v = parseNum(rp.value);
+  rd.value = (v == null) ? '' : (v / lp * 100).toFixed(2);
+}
+function syncAllRd(){ document.querySelectorAll('#roles .role').forEach(syncRowRd); }
+
 /* ---------- 事件 ---------- */
 document.getElementById('add').addEventListener('click', function(){
-  document.getElementById('roles').appendChild(makeRow({ name: '', price: null }));
+  var el = makeRow({ name: '', price: null });
+  document.getElementById('roles').appendChild(el);
+  syncRowRd(el);
   render();
 });
 document.getElementById('reset').addEventListener('click', function(){
@@ -407,6 +428,7 @@ document.getElementById('reset').addEventListener('click', function(){
   document.getElementById('n1').value = 1;
   document.getElementById('n2').value = 0.5;
   document.getElementById('wt').value = 35;
+  syncAllRd();
   render();
 });
 document.getElementById('roles').addEventListener('click', function(e){
@@ -422,11 +444,43 @@ document.getElementById('roles').addEventListener('click', function(e){
   var b = e.target.closest('.del');
   if (b){ b.closest('.role').remove(); render(); }
 });
-document.getElementById('roles').addEventListener('input', render);
-document.getElementById('params').addEventListener('input', render);
+document.getElementById('roles').addEventListener('input', function(e){
+  var t = e.target, row = t.closest('.role');
+  if (row){
+    var lp = parseNum(document.getElementById('lp').value);
+    if (t.classList.contains('rp')){
+      /* 填金额 → 自动算折扣率回填 */
+      if (lp){
+        var v = parseNum(t.value), rd = row.querySelector('.rd');
+        rd.disabled = false; rd.placeholder = '折扣率';
+        rd.value = (v == null) ? '' : (v / lp * 100).toFixed(2);
+      }
+    } else if (t.classList.contains('rd')){
+      /* 填折扣率 → 自动算金额回填 */
+      if (lp){
+        var d = parseFloat(String(t.value).replace(/[,，\s]/g,''));
+        row.querySelector('.rp').value = (isNaN(d) || d <= 0) ? '' : Math.round(d / 100 * lp * 100) / 100;
+      }
+    }
+  }
+  render();
+});
+document.getElementById('params').addEventListener('input', function(e){
+  if (e.target.id === 'lp'){
+    /* 限价变化 → 全部折扣率按各金额重算 */
+    var lp = parseNum(e.target.value);
+    document.querySelectorAll('#roles .role').forEach(function(el){
+      var rd = el.querySelector('.rd');
+      if (!lp){ rd.value = ''; rd.disabled = true; rd.placeholder = '—'; }
+      else { syncRowRd(el); }
+    });
+  }
+  render();
+});
 
 /* 启动 */
 load();
+syncAllRd();
 render();
 </script>
 </body>
