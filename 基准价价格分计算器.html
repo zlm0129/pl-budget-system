@@ -1,0 +1,433 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>基准价价格分计算器</title>
+<style>
+  *{box-sizing:border-box}
+  body{margin:0;background:#0f1115;color:#e6e9ef;
+       font:15px/1.6 system-ui,-apple-system,"Segoe UI","Microsoft YaHei",sans-serif}
+  header{padding:20px 28px 14px;border-bottom:1px solid #262b36;background:#151922}
+  h1{margin:0;font-size:18px;font-weight:600}
+  header p{margin:7px 0 0;color:#8b96a8;font-size:12.5px;max-width:1180px}
+  header p b{color:#cfd6e4}
+  header p b.hl{color:#6fcf9a}
+  main{padding:18px 28px 70px;max-width:1180px}
+
+  /* 参数条 */
+  .params{display:flex;flex-wrap:wrap;gap:10px;align-items:flex-end;
+          background:#171a21;border:1px solid #262b36;border-radius:14px;padding:13px 16px}
+  .pfield{display:flex;flex-direction:column;gap:4px}
+  .pfield label{font-size:11px;color:#8b96a8}
+  .pfield .w{display:flex;align-items:baseline;border:1px solid #2c3342;background:#0e1118;
+             border-radius:9px;padding:6px 9px;min-width:88px}
+  .pfield .w:focus-within{border-color:#4f8cff;box-shadow:0 0 0 3px #4f8cff22}
+  .pfield input{border:0;background:transparent;color:#e6e9ef;font:15px/1.2 inherit;
+                width:100%;font-variant-numeric:tabular-nums}
+  .pfield input:focus{outline:none}
+  .pfield .u{color:#6b7687;font-size:11px;margin-left:3px}
+  .pfield.key .w{border-color:#4f8cff66;background:#101828}
+  .pfield.key label{color:#7fa8ff}
+  .params .note{margin-left:auto;font-size:11px;color:#5d6779;max-width:300px;text-align:right}
+
+  /* 角色 */
+  .panel{margin-top:16px;background:#171a21;border:1px solid #262b36;border-radius:14px;padding:16px 18px}
+  .panel h2{margin:0 0 12px;font-size:13.5px;color:#cfd6e4;font-weight:600;
+            display:flex;align-items:center;gap:10px}
+  .panel h2 .sp{flex:1}
+  .btn{border:1px solid #2c3342;background:#1a1f2b;color:#cfd6e4;border-radius:8px;
+       padding:5px 12px;font:12.5px/1.4 inherit;cursor:pointer}
+  .btn:hover{border-color:#4f8cff88;color:#fff}
+  .btn.primary{border-color:#2fbf7166;background:#14241b;color:#6fcf9a}
+  .btn.primary:hover{border-color:#4ede92aa}
+  #roles{display:grid;grid-template-columns:repeat(auto-fill,minmax(228px,1fr));gap:10px}
+  .role{display:flex;align-items:center;gap:6px;border:1px solid #262b36;border-radius:10px;
+        background:#0e1118;padding:7px 9px}
+  .role.fixed,.role.mine{border-color:#2fbf7140;background:#131f19}
+  .role.mine .rn{color:#6fcf9a}
+  .role .side{border:1px solid #2c3342;background:#1a1f2b;color:#8b96a8;border-radius:5px;
+              font:10.5px/1.5 inherit;padding:1px 7px;cursor:pointer;white-space:nowrap}
+  .role .side:hover{border-color:#4f8cff88}
+  .role .side.on{border-color:#2fbf7155;color:#6fcf9a;background:#141f1a}
+  .role input{background:transparent;border:0;color:#e6e9ef;font:14px/1.4 inherit;min-width:0}
+  .role input:focus{outline:none}
+  .role .rn{flex:1;border-bottom:1px dashed transparent;color:#9aa5b8;font-size:12px}
+  .role .rn:hover{border-bottom-color:#2c3342}
+  .role .rn:focus{border-bottom-color:#4f8cff;color:#e6e9ef}
+  .role.fixed .rn{color:#6fcf9a;cursor:default}
+  .role .rp{width:74px;text-align:right;font-variant-numeric:tabular-nums;border-bottom:1px solid #2c3342}
+  .role .rp:focus{border-bottom-color:#4f8cff}
+  .role .u{color:#6b7687;font-size:11px}
+  .role .del{border:0;background:transparent;color:#5d6779;font-size:16px;cursor:pointer;
+             padding:0 2px;line-height:1}
+  .role .del:hover{color:#f87171}
+  .role .lock{font-size:10px;color:#4a7a5e;border:1px solid #2fbf7140;border-radius:4px;padding:0 4px}
+
+  /* KPI */
+  .kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin:16px 0 0}
+  .kpi{background:#171a21;border:1px solid #262b36;border-radius:13px;padding:12px 15px}
+  .kpi .k{font-size:11.5px;color:#8b96a8}
+  .kpi .v{font-size:21px;font-weight:600;margin-top:3px;font-variant-numeric:tabular-nums}
+  .kpi .d{font-size:11px;color:#6b7687;margin-top:2px}
+  .kpi.hl{border-color:#2fbf7155;background:#141f1a}
+  .kpi.hl .v{color:#4ede92}
+  .kpi.warn{border-color:#f5a62355;background:#211c12}
+  .kpi.warn .v{color:#f5b942}
+  .kpi.bad{border-color:#ef535055;background:#211416}
+  .kpi.bad .v{color:#f87171}
+  .kpi.key{border-color:#4f8cff55;background:#141b2b}
+  .kpi.key .v{color:#7fa8ff}
+
+  table{width:100%;border-collapse:collapse;font-size:13px;font-variant-numeric:tabular-nums}
+  th,td{padding:8px 10px;text-align:right;border-bottom:1px solid #21262f;white-space:nowrap}
+  th{text-align:right;color:#8b96a8;font-weight:600;font-size:11.5px;border-bottom:1px solid #2c3342}
+  th:first-child,td:first-child{text-align:center;color:#6b7687;width:34px}
+  th.l,td.l{text-align:left}
+  tr.mine td{background:#141f1a}
+  tr.out td{color:#6b7687}
+  td.sc{font-weight:600;font-size:14px}
+  .gap{font-weight:600}
+  .gap.pos{color:#f87171}
+  .gap.neg{color:#4ede92}
+  .gap.zero{color:#8b96a8}
+  .tag{display:inline-block;font-size:11px;padding:1px 7px;border-radius:5px;
+       border:1px solid #2c3342;color:#9aa5b8;background:#1a1f2b}
+  .tag.mine{border-color:#2fbf7155;color:#6fcf9a;background:#141f1a}
+  .tag.eff{border-color:#2fbf7155;color:#6fcf9a;background:#141f1a}
+  .tag.cut{border-color:#f5a62355;color:#f5b942;background:#211c12}
+  .tag.inv{border-color:#ef535055;color:#e08a8a;background:#211416}
+  .legend{font-size:11.5px;color:#6b7687;margin-top:9px}
+  .legend b.pos{color:#f87171}
+  .legend b.neg{color:#4ede92}
+
+  .steps{display:grid;gap:8px;font-size:12.5px;color:#b7c0d0}
+  .step{display:flex;gap:10px;align-items:baseline}
+  .step .no{flex:0 0 20px;height:20px;line-height:20px;text-align:center;border-radius:6px;
+            background:#1c2130;color:#8b96a8;font-size:11.5px}
+  .step b{color:#e6e9ef}
+  .step .kv{color:#8b96a8}
+  .mini{font-size:12px;color:#8b96a8}
+  .err{color:#f5b942;font-size:13px;padding:6px 0}
+</style>
+</head>
+<body>
+<header>
+  <h1>基准价价格分计算器</h1>
+  <p>规则：初评合格 M 家 → 按家数<b>去极值</b> → 得有效区间 (A1×(1+W1), A1×(1+W2)) → 有效家算术平均 A2 → <b>基准价 = A2×(1−C)</b> → 价格分 = 100 − 100×n×|报价−基准价|/基准价（≥基准价取 n1，&lt;基准价取 n2，低于 0 按 0 计）→ 实际分 = 价格分 × 权重。
+  <b class="hl">天存固定；其余角色可增删，点角色卡上的标签可切换「对手 / 伙伴」，我方阵营在表格中同色高亮。单位万元，输入 ≥10000 自动按元折算。</b></p>
+</header>
+<main>
+  <section class="params" id="params">
+    <div class="pfield key"><label>最高限价</label><div class="w"><input id="lp" value="" inputmode="decimal" placeholder="选填"><span class="u">万</span></div></div>
+    <div class="pfield"><label>W1 区间下限</label><div class="w"><input id="w1" value="-15" inputmode="decimal"><span class="u">%</span></div></div>
+    <div class="pfield"><label>W2 区间上限</label><div class="w"><input id="w2" value="10" inputmode="decimal"><span class="u">%</span></div></div>
+    <div class="pfield key"><label>C 基准价浮动系数</label><div class="w"><input id="c" value="3" inputmode="decimal"><span class="u">%</span></div></div>
+    <div class="pfield"><label>n1（报价≥基准价）</label><div class="w"><input id="n1" value="1" inputmode="decimal"></div></div>
+    <div class="pfield"><label>n2（报价&lt;基准价）</label><div class="w"><input id="n2" value="0.5" inputmode="decimal"></div></div>
+    <div class="pfield"><label>价格评分权重</label><div class="w"><input id="wt" value="35" inputmode="decimal"><span class="u">%</span></div></div>
+    <div class="note">最高限价、C 为项目级灵活输入；W1/W2/n1/n2/权重已按采购文件固化，一般无需改动。折扣率 = 报价 ÷ 最高限价。</div>
+  </section>
+
+  <section class="panel">
+    <h2>参与初评合格的供应商 <span class="sp"></span>
+      <button class="btn primary" id="add">＋ 添加角色</button>
+      <button class="btn" id="reset">重置</button></h2>
+    <div id="roles"></div>
+  </section>
+
+  <div class="kpis" id="kpis"></div>
+
+  <div class="panel"><h2>各家得分（按折算分排序）</h2><div id="table"></div>
+    <div class="legend"><b style="color:#6fcf9a">绿色高亮行＝我方阵营（天存＋小伙伴）</b>；角色卡上的「对手 / 伙伴」标签可点击切换阵营。「与天存分差」＝ 该家折算分 − 天存折算分：<b class="pos">红字＝高于天存</b>、<b class="neg">绿字＝低于天存</b>。</div>
+  </div>
+
+  <div class="panel"><h2>基准价推算过程</h2><div class="steps" id="steps"></div></div>
+</main>
+
+<script>
+var FIXED = '天存';
+var SEED = [
+  { name: '天存',  price: null, fixed: true },
+  { name: '伙伴①', price: null, side: 'mine' },
+  { name: '对手①', price: null },
+  { name: '对手②', price: null },
+  { name: '对手③', price: null }
+];
+var LS_KEY = 'base_price_calc_v2';
+
+/* ---------- 工具 ---------- */
+function avg(a){ return a.reduce(function(x,y){ return x + y; }, 0) / a.length; }
+function money(v){ return Number(v).toLocaleString('zh-CN',{minimumFractionDigits:2,maximumFractionDigits:2}); }
+function f2(v){ return Number(v).toFixed(2); }
+function pct(v){ var s = (v*100).toFixed(2); return (v>0?'+':'') + s + '%'; }
+function parseNum(raw){
+  raw = String(raw).replace(/[,，\s]/g,'');
+  if (raw === '') return null;
+  var v = parseFloat(raw);
+  if (isNaN(v) || v <= 0) return null;
+  return v >= 10000 ? v / 10000 : v;   /* 输入“元”自动折算为“万元” */
+}
+
+/* ---------- 角色区 ---------- */
+function makeRow(r){
+  var mine = r.fixed || r.side === 'mine';
+  var el = document.createElement('div');
+  el.className = 'role' + (r.fixed ? ' fixed' : '') + (mine ? ' mine' : '');
+  el.innerHTML =
+    '<input class="rn" spellcheck="false" value="' + (r.name||'') + '"' + (r.fixed?' readonly':'') + '>' +
+    (r.fixed ? '<span class="lock">固定</span>'
+             : '<button class="side' + (mine ? ' on' : '') + '">' + (mine ? '伙伴' : '对手') + '</button>') +
+    '<input class="rp" inputmode="decimal" value="' + (r.price!=null?r.price:'') + '">' +
+    '<span class="u">万</span>' +
+    (r.fixed ? '' : '<button class="del" title="删除">×</button>');
+  return el;
+}
+function renderRoles(list){
+  var box = document.getElementById('roles');
+  box.innerHTML = '';
+  list.forEach(function(r){ box.appendChild(makeRow(r)); });
+}
+function readRoles(){
+  var out = [];
+  document.querySelectorAll('#roles .role').forEach(function(el){
+    var name = el.querySelector('.rn').value.trim();
+    var fixed = el.classList.contains('fixed');
+    var mine = fixed || el.classList.contains('mine');
+    var price = parseNum(el.querySelector('.rp').value);
+    if (price === null) return;              /* 未填价格的不参与计算 */
+    out.push({ name: name || (fixed ? FIXED : '未命名'), price: price, fixed: fixed, side: mine ? 'mine' : 'opp' });
+  });
+  return out;
+}
+function readParams(){
+  return {
+    lp: parseNum(document.getElementById('lp').value),
+    w1: (parseFloat(document.getElementById('w1').value) || 0) / 100,
+    w2: (parseFloat(document.getElementById('w2').value) || 0) / 100,
+    c : (parseFloat(document.getElementById('c').value)  || 0) / 100,
+    n1: (parseFloat(document.getElementById('n1').value) || 0),
+    n2: (parseFloat(document.getElementById('n2').value) || 0),
+    w : (parseFloat(document.getElementById('wt').value) || 0) / 100
+  };
+}
+
+/* ---------- 核心算法 ---------- */
+function compute(){
+  var P = readParams();
+  var roles = readRoles();
+  if (roles.length < 2) return { err: '请至少填入 2 家（含天存）的报价。' };
+
+  var M = roles.length, hc, lc, rule;
+  if (M <= 5)       { hc = 0; lc = 0; rule = 'M ≤ 5：不去极值'; }
+  else if (M <= 10) { hc = 1; lc = 1; rule = '5 < M ≤ 10：去 1 最高 + 1 最低'; }
+  else if (M <= 20) { hc = 2; lc = 1; rule = '10 < M ≤ 20：去 2 高 + 1 低'; }
+  else if (M <= 30) { hc = 3; lc = 2; rule = '20 < M ≤ 30：去 3 高 + 2 低'; }
+  else              { hc = 4; lc = 3; rule = 'M > 30：去 4 高 + 3 低'; }
+
+  /* 按价格升序排序（稳定） */
+  var idx = roles.map(function(_,i){ return i; })
+                 .sort(function(a,b){ return roles[a].price - roles[b].price || a - b; });
+
+  var removed = {}, i;
+  for (i = 0; i < lc; i++) removed[idx[i]] = 1;
+  for (i = M - hc; i < M; i++) if (i >= 0) removed[idx[i]] = 1;
+
+  var remain = idx.slice(lc, M - hc);
+  var A1 = avg(remain.map(function(i){ return roles[i].price; }));
+  var lo = A1 * (1 + P.w1), hi = A1 * (1 + P.w2);
+
+  var eff = remain.filter(function(i){ return roles[i].price > lo && roles[i].price < hi; });
+  var fallback = false;
+  if (eff.length === 0) { eff = remain.slice(); fallback = true; }
+  var effMap = {}; eff.forEach(function(i){ effMap[i] = 1; });
+
+  var A2 = avg(eff.map(function(i){ return roles[i].price; }));
+  var base = A2 * (1 - P.c);
+
+  var rows = roles.map(function(r, i){
+    var diff = r.price - base;
+    var n = diff >= 0 ? P.n1 : P.n2;
+    var raw = 100 - 100 * n * Math.abs(diff) / base;
+    if (raw < 0) raw = 0;
+    var st;
+    if (removed[i])      st = { k: 'cut', t: '去极值剔除' };
+    else if (effMap[i])  st = { k: 'eff', t: fallback ? '有效（兜底全取）' : '有效' };
+    else                 st = { k: 'inv', t: '区间外·无效' };
+    return { name: r.name, price: r.price, fixed: r.fixed, side: r.side, diff: diff,
+             di: diff / base, n: n, raw: raw, sc: raw * P.w, st: st,
+             dc: P.lp ? r.price / P.lp : null, over: P.lp ? r.price > P.lp : false };
+  });
+
+  var tc = rows.filter(function(r){ return r.fixed; })[0] || null;
+  rows.forEach(function(r){ r.gap = tc ? r.sc - tc.sc : null; });
+
+  return { M: M, X: remain.length, hc: hc, lc: lc, rule: rule, A1: A1, lo: lo, hi: hi,
+           effN: eff.length, fallback: fallback, A2: A2, base: base, rows: rows, tc: tc, P: P };
+}
+
+/* ---------- 渲染 ---------- */
+function kpi(k, v, d, cls){
+  return '<div class="kpi ' + (cls||'') + '"><div class="k">' + k + '</div><div class="v">' + v + '</div><div class="d">' + (d||'') + '</div></div>';
+}
+
+function render(){
+  var r = compute(), kpis = document.getElementById('kpis'),
+      tbl = document.getElementById('table'), steps = document.getElementById('steps');
+
+  if (r.err){
+    kpis.innerHTML = '';
+    tbl.innerHTML = '<div class="err">' + r.err + '</div>';
+    steps.innerHTML = '';
+    save();
+    return;
+  }
+
+  var opps = r.rows.filter(function(x){ return x.side === 'opp'; });
+  var opTop = opps.slice().sort(function(a,b){ return b.sc - a.sc; })[0];
+  var edge = (r.tc && opTop) ? r.tc.sc - opTop.sc : null;
+  var ecls = edge === null ? 'warn' : (edge > 0.005 ? 'hl' : (edge < -0.005 ? 'bad' : 'warn'));
+  var etxt = edge === null ? '无可比对手' : (edge > 0.005 ? '领先' : (edge < -0.005 ? '落后' : '并列'));
+  var overN = r.P.lp ? r.rows.filter(function(x){ return x.over; }).length : 0;
+
+  kpis.innerHTML =
+    kpi('初评合格 M', r.M + ' 家', r.rule, '') +
+    kpi('最高限价', r.P.lp ? money(r.P.lp) + ' 万' : '—',
+        r.P.lp ? (overN ? '⚠ ' + overN + ' 家超限价！' : (r.tc && r.tc.dc != null ? '天存折扣率 ' + (r.tc.dc*100).toFixed(2) + '%' : ''))
+               : '填入后各家显示折扣率', overN ? 'bad' : '') +
+    kpi('去极值后 X', r.X + ' 家', '剔除 ' + (r.hc + r.lc) + ' 家', '') +
+    kpi('A1 算术平均', money(r.A1), '去极值后平均', '') +
+    kpi('有效区间', '(' + f2(r.lo) + ', ' + f2(r.hi) + ')', '不含本数', '') +
+    kpi('有效供应商', r.effN + ' 家', r.fallback ? '区间内为 0，兜底全取' : '落在区间内', r.effN ? '' : 'warn') +
+    kpi('A2 有效平均', money(r.A2), '有效家算术平均', '') +
+    kpi('基准价', money(r.base) + ' 万', 'A2 × (1 − ' + (r.P.c*100).toFixed(2) + '%)', 'key') +
+    kpi('天存折算分', r.tc ? f2(r.tc.sc) + ' / ' + f2(r.P.w*100) : '—',
+        r.tc ? '百分制 ' + f2(r.tc.raw) : '', 'hl') +
+    kpi('天存 vs 最高对手', edge === null ? '—' : (edge>0?'+':'') + f2(edge), etxt, ecls);
+
+  var sorted = r.rows.slice().sort(function(a,b){ return b.sc - a.sc; });
+  var html = '<table><thead><tr>' +
+    '<th>#</th><th class="l">供应商</th><th class="l">状态</th><th>评标价(万)</th>' +
+    '<th>折扣率</th><th>偏差率</th><th>n</th><th>百分制</th><th>折算分</th><th>与天存分差</th>' +
+    '</tr></thead><tbody>';
+  sorted.forEach(function(x, i){
+    var isMine = x.side === 'mine';
+    var gc = x.gap == null ? 'zero' : (x.gap > 0.005 ? 'pos' : (x.gap < -0.005 ? 'neg' : 'zero'));
+    var gtxt = (x.fixed || x.gap == null) ? '—' : (x.gap > 0 ? '+' : '') + f2(x.gap);
+    var sideTag = x.fixed ? '<span class="tag mine">天存</span>'
+                : isMine  ? '<span class="tag mine">小伙伴</span>'
+                          : '<span class="tag opp">对手</span>';
+    var stTag = '<span class="tag ' + x.st.k + '">' + x.st.t + '</span>';
+    html += '<tr class="' + (isMine ? 'mine' : (x.st.k === 'cut' ? 'out' : '')) + '">' +
+      '<td>' + (i+1) + '</td>' +
+      '<td class="l">' + x.name + '</td>' +
+      '<td class="l">' + sideTag + stTag + '</td>' +
+      '<td>' + money(x.price) + '</td>' +
+      '<td>' + (x.dc == null ? '—' : (x.dc*100).toFixed(2) + '%' + (x.over ? ' <span class="tag inv">超限价</span>' : '')) + '</td>' +
+      '<td>' + pct(x.di) + '</td>' +
+      '<td>' + x.n + '</td>' +
+      '<td>' + f2(x.raw) + '</td>' +
+      '<td class="sc">' + f2(x.sc) + '</td>' +
+      '<td class="gap ' + gc + '">' + gtxt + '</td>' +
+      '</tr>';
+  });
+  html += '</tbody></table>';
+  tbl.innerHTML = html;
+
+  /* 推算过程 */
+  var remNames = r.rows.map(function(x,i){ return {i:i, x:x}; })
+                       .filter(function(o){ return o.x.st.k !== 'cut'; })
+                       .map(function(o){ return o.x.name; });
+  var cutNames = r.rows.filter(function(x){ return x.st.k === 'cut'; })
+                       .map(function(x){ return money(x.price); });
+  var invNames = r.rows.filter(function(x){ return x.st.k === 'inv'; })
+                       .map(function(x){ return x.name; });
+
+  steps.innerHTML =
+    step(1, '初评合格供应商', '<b>' + r.M + '</b> 家') +
+    step(2, '最高限价', r.P.lp ? '<b>' + money(r.P.lp) + '</b> 万' + (overN ? '，<b style="color:#f87171">' + overN + ' 家报价超限价</b>' : '，各家均在限价内') : '未填（折扣率不显示）') +
+    step(3, '去极值规则', r.rule + '，剔除 最高/最低 ' + (cutNames.length ? '（' + cutNames.join('、') + ' 万）' : '（无）') +
+        ' → 剩 <b>X = ' + r.X + '</b> 家') +
+    step(4, 'A1 算术平均', 'A1 = <b>' + money(r.A1) + '</b> 万') +
+    step(5, '有效区间', '(' + money(r.lo) + ' 万, ' + money(r.hi) + ' 万)，即 (' +
+        (r.P.w1*100).toFixed(2) + '%, +' + (r.P.w2*100).toFixed(2) + '%) 区间、不含本数') +
+    step(6, '区间筛选', (r.fallback ? '<b>区间内为 0 家 → 兜底：X 家全部视为有效</b>'
+        : '区间内 <b>' + r.effN + '</b> 家有效' + (invNames.length ? '；区间外无效：' + invNames.join('、') : ''))) +
+    step(7, 'A2 有效平均', 'A2 = <b>' + money(r.A2) + '</b> 万') +
+    step(8, '基准价', '基准价 = A2 × (1 − ' + (r.P.c*100).toFixed(2) + '%) = <b>' + money(r.base) + '</b> 万');
+
+  save();
+}
+function step(no, title, body){
+  return '<div class="step"><span class="no">' + no + '</span><span><b>' + title + '</b>：' + body + '</span></div>';
+}
+
+/* ---------- 本地存储 ---------- */
+function save(){
+  try{
+    var roles = [];
+    document.querySelectorAll('#roles .role').forEach(function(el){
+      roles.push({ name: el.querySelector('.rn').value, price: el.querySelector('.rp').value,
+                   fixed: el.classList.contains('fixed'),
+                   side: el.classList.contains('mine') ? 'mine' : 'opp' });
+    });
+    localStorage.setItem(LS_KEY, JSON.stringify({ roles: roles, params: {
+      lp: document.getElementById('lp').value,
+      w1: document.getElementById('w1').value, w2: document.getElementById('w2').value,
+      c: document.getElementById('c').value, n1: document.getElementById('n1').value,
+      n2: document.getElementById('n2').value, wt: document.getElementById('wt').value } }));
+  }catch(e){}
+}
+function load(){
+  var d = null;
+  try{ d = JSON.parse(localStorage.getItem(LS_KEY) || 'null'); }catch(e){}
+  if (d && d.roles && d.roles.length){
+    renderRoles(d.roles);
+    if (d.params){
+      ['lp','w1','w2','c','n1','n2','wt'].forEach(function(k){
+        if (d.params[k] != null) document.getElementById(k).value = d.params[k];
+      });
+    }
+  } else {
+    renderRoles(SEED);
+  }
+}
+
+/* ---------- 事件 ---------- */
+document.getElementById('add').addEventListener('click', function(){
+  document.getElementById('roles').appendChild(makeRow({ name: '', price: null }));
+  render();
+});
+document.getElementById('reset').addEventListener('click', function(){
+  renderRoles(SEED);
+  document.getElementById('lp').value = '';
+  document.getElementById('w1').value = -15;
+  document.getElementById('w2').value = 10;
+  document.getElementById('c').value  = 3;
+  document.getElementById('n1').value = 1;
+  document.getElementById('n2').value = 0.5;
+  document.getElementById('wt').value = 35;
+  render();
+});
+document.getElementById('roles').addEventListener('click', function(e){
+  var s = e.target.closest('.side');
+  if (s){
+    var row = s.closest('.role');
+    var mine = row.classList.toggle('mine');
+    s.classList.toggle('on', mine);
+    s.textContent = mine ? '伙伴' : '对手';
+    render();
+    return;
+  }
+  var b = e.target.closest('.del');
+  if (b){ b.closest('.role').remove(); render(); }
+});
+document.getElementById('roles').addEventListener('input', render);
+document.getElementById('params').addEventListener('input', render);
+
+/* 启动 */
+load();
+render();
+</script>
+</body>
+</html>
